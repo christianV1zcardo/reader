@@ -126,6 +126,24 @@
         .context-view {
             font-family: 'Literata', Georgia, serif;
             line-height: 2;
+            max-height: 60vh;
+            min-height: 180px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 1rem 0.5rem;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #3f3f46 transparent;
+        }
+        
+        @media (max-width: 640px) {
+            .context-view {
+                max-height: 50vh;
+                min-height: 200px;
+                padding: 1.5rem 1rem;
+                font-size: 1rem;
+            }
         }
         
         .context-current-word {
@@ -137,14 +155,35 @@
         }
         
         .reading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            position: relative;
+            min-width: 320px;
+            height: 1.5em;
             max-width: 90vw;
-            max-height: 50vh;
-            overflow: hidden;
-            padding: 1.5rem;
+        }
+        
+        .pivot-left {
+            position: absolute;
+            right: 50%;
+            padding-right: 2px;
+            text-align: right;
+            white-space: nowrap;
+            color: #e4e4e7;
+        }
+        
+        .pivot-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ef4444;
+        }
+        
+        .pivot-right {
+            position: absolute;
+            left: 50%;
+            padding-left: 2px;
+            text-align: left;
+            white-space: nowrap;
+            color: #e4e4e7;
         }
         
         .word-size-sm { font-size: clamp(1.5rem, 5vw, 2rem); }
@@ -300,9 +339,11 @@
             <!-- RSVP Display -->
             <div id="rsvpDisplay" class="hidden w-full flex flex-col items-center justify-center">
                 <div class="relative reading-container">
-                    <div class="absolute left-1/2 -translate-x-1/2 w-px h-3 bg-red-500/40 -top-5"></div>
-                    <div class="absolute left-1/2 -translate-x-1/2 w-px h-3 bg-red-500/40 -bottom-5"></div>
-                    <div id="currentWord" class="rsvp-word word-size-lg font-medium tracking-wide flex items-center justify-center whitespace-nowrap">
+                    <!-- Guías visuales del pivot -->
+                    <div class="absolute left-1/2 -translate-x-1/2 w-[2px] h-4 bg-zinc-700 -top-6 rounded-full"></div>
+                    <div class="absolute left-1/2 -translate-x-1/2 w-[2px] h-4 bg-zinc-700 -bottom-6 rounded-full"></div>
+                    <!-- Palabra con pivot fijo -->
+                    <div id="currentWord" class="rsvp-word word-size-lg font-medium tracking-wide relative w-full h-full">
                         <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
                     </div>
                 </div>
@@ -311,7 +352,7 @@
             
             <!-- Context View -->
             <div id="contextView" class="hidden w-full max-w-2xl mx-auto px-2">
-                <div class="bg-zinc-800/50 rounded-2xl p-6 max-h-[55vh] overflow-y-auto scrollbar-thin">
+                <div class="bg-zinc-800/50 rounded-2xl p-4 sm:p-6">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-xs text-zinc-500 flex items-center gap-2">
                             <span class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></span>
@@ -319,7 +360,7 @@
                         </span>
                         <span class="text-xs text-zinc-600">±70 palabras</span>
                     </div>
-                    <p id="contextText" class="context-view text-lg text-zinc-300"></p>
+                    <p id="contextText" class="context-view text-base sm:text-lg text-zinc-300"></p>
                 </div>
                 <p class="text-center text-zinc-600 text-xs mt-5">Toca ▶ para continuar</p>
             </div>
@@ -708,78 +749,92 @@
                 return `${filename}-${content.length}-${sample.length}`;
             }
             
-            // ==================== CHAPTER DETECTION (REFINED) ====================
+            // ==================== CHAPTER DETECTION (STRICT MODE) ====================
             
             parseChapters(text) {
                 const lines = text.split('\n');
                 const chapters = [];
                 let wordIndex = 0;
                 
+                const MIN_TITLE_LENGTH = 4;
                 const MAX_TITLE_LENGTH = 80;
                 
-                // Keywords that indicate a chapter/section
-                const chapterKeywords = /\b(CAPÍTULO|CAPITULO|CHAPTER|PARTE|PART|SECCIÓN|SECCION|SECTION|LIBRO|BOOK)\b/i;
+                // WHITELIST ESTRICTA:
+                // 1. Palabras clave de capítulo (case insensitive)
+                const chapterKeywords = /\b(CAPÍTULO|CAPITULO|CHAPTER|PARTE|PART|LIBRO|BOOK|PRÓLOGO|PROLOGO|PROLOGUE|EPÍLOGO|EPILOGO|EPILOGUE|INTRODUCCIÓN|INTRODUCCION|INTRODUCTION)\b/i;
                 
-                // Patterns for chapter detection
-                const romanNumeralOnly = /^([IVXLCDM]+)\s*$/;
-                const arabicNumberOnly = /^(\d{1,3})\s*$/;
-                const numberedWithKeyword = /^(\d+)\.\s+.*/;
+                // 2. Numerales romanos solos con punto opcional
+                const romanNumeralPattern = /^([IVXLCDM]+)\.?\s*$/;
                 
-                // Subtitle patterns
-                const subtitlePatterns = [
-                    /^[A-ZÁÉÍÓÚÑ\s]{3,50}$/,
-                    /^[A-Z][a-záéíóúñ]+(\s+[A-Z][a-záéíóúñ]+){0,6}$/
-                ];
+                // 3. Número + punto + texto con letra
+                const numberedTitlePattern = /^(\d{1,3})\.\s+[A-Za-záéíóúñÁÉÍÓÚÑ].+$/;
+                
+                // 4. Todo MAYÚSCULAS con letras (mínimo 4 chars)
+                const allCapsPattern = /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\d.,:\-—–]+$/;
                 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim();
                     const wordsInLine = line.split(/\s+/).filter(w => w.length > 0);
                     
-                    if (line.length > 0 && line.length <= MAX_TITLE_LENGTH) {
-                        let isChapter = false;
-                        
-                        // Check for chapter keywords (most reliable)
-                        if (chapterKeywords.test(line)) {
+                    // Saltar líneas vacías o fuera de rango
+                    if (line.length < MIN_TITLE_LENGTH || line.length > MAX_TITLE_LENGTH) {
+                        wordIndex += wordsInLine.length;
+                        continue;
+                    }
+                    
+                    // RECHAZAR: líneas que son solo números (páginas)
+                    if (/^\d+$/.test(line)) {
+                        wordIndex += wordsInLine.length;
+                        continue;
+                    }
+                    
+                    // RECHAZAR: líneas sin letras
+                    if (!/[A-Za-záéíóúñÁÉÍÓÚÑ]/.test(line)) {
+                        wordIndex += wordsInLine.length;
+                        continue;
+                    }
+                    
+                    let isChapter = false;
+                    
+                    // REGLA 1: Palabras clave
+                    if (chapterKeywords.test(line)) {
+                        isChapter = true;
+                    }
+                    // REGLA 2: Numeral romano solo
+                    else if (romanNumeralPattern.test(line)) {
+                        isChapter = true;
+                    }
+                    // REGLA 3: Número + punto + texto
+                    else if (numberedTitlePattern.test(line)) {
+                        isChapter = true;
+                    }
+                    // REGLA 4: Todo MAYÚSCULAS (mínimo 2 letras)
+                    else if (allCapsPattern.test(line)) {
+                        const letterCount = (line.match(/[A-ZÁÉÍÓÚÑ]/g) || []).length;
+                        if (letterCount >= 2) {
                             isChapter = true;
                         }
-                        // Check for roman numeral alone
-                        else if (romanNumeralOnly.test(line)) {
-                            isChapter = true;
-                        }
-                        // Check for arabic number alone (1-999)
-                        else if (arabicNumberOnly.test(line)) {
-                            isChapter = true;
-                        }
-                        // Check for numbered lines (1. Something) - only if ALL CAPS or has keyword
-                        else if (numberedWithKeyword.test(line)) {
-                            // Only accept if line is ALL CAPS or contains chapter keyword
-                            const isAllCaps = line === line.toUpperCase() && /[A-Z]/.test(line);
-                            if (isAllCaps || chapterKeywords.test(line)) {
-                                isChapter = true;
-                            }
-                        }
-                        
-                        if (isChapter) {
-                            // Look ahead for subtitle
-                            let subtitle = '';
-                            if (i + 1 < lines.length) {
-                                const nextLine = lines[i + 1].trim();
-                                if (nextLine.length > 0 && nextLine.length < 60 && nextLine.length <= MAX_TITLE_LENGTH) {
-                                    for (const subPattern of subtitlePatterns) {
-                                        if (subPattern.test(nextLine)) {
-                                            subtitle = nextLine;
-                                            break;
-                                        }
-                                    }
+                    }
+                    
+                    if (isChapter) {
+                        // Buscar subtítulo en la siguiente línea
+                        let subtitle = '';
+                        if (i + 1 < lines.length) {
+                            const nextLine = lines[i + 1].trim();
+                            if (nextLine.length >= 3 && nextLine.length <= 50 && !/^\d+$/.test(nextLine)) {
+                                const isTitleCase = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-Za-záéíóúñÁÉÍÓÚÑ][a-záéíóúñ]*)*$/.test(nextLine);
+                                const isAllCaps = /^[A-ZÁÉÍÓÚÑ\s]+$/.test(nextLine);
+                                if (isTitleCase || isAllCaps) {
+                                    subtitle = nextLine;
                                 }
                             }
-                            
-                            chapters.push({
-                                title: line + (subtitle ? ' — ' + subtitle : ''),
-                                wordIndex: wordIndex,
-                                lineIndex: i
-                            });
                         }
+                        
+                        chapters.push({
+                            title: line + (subtitle ? ' — ' + subtitle : ''),
+                            wordIndex: wordIndex,
+                            lineIndex: i
+                        });
                     }
                     
                     wordIndex += wordsInLine.length;
@@ -1159,7 +1214,11 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 const center = chunk.charAt(pivotIndex);
                 const right = chunk.substring(pivotIndex + 1);
                 
-                this.currentWord.innerHTML = '<span class="pivot-left">' + left + '</span><span class="pivot-center">' + center + '</span><span class="pivot-right">' + right + '</span>';
+                // Con posicionamiento absoluto, el pivote siempre está en el centro exacto
+                this.currentWord.innerHTML = 
+                    '<span class="pivot-left">' + left + '</span>' +
+                    '<span class="pivot-center">' + center + '</span>' +
+                    '<span class="pivot-right">' + right + '</span>';
                 this.updateWordCounter();
             }
             
