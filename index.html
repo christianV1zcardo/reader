@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#18181b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>RSVP Reader</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f172a' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>📖</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2318181b' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>📖</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Literata:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap');
         
         * {
             -webkit-tap-highlight-color: transparent;
@@ -21,7 +19,7 @@
         }
         
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             overscroll-behavior: none;
         }
         
@@ -31,30 +29,29 @@
             overflow-wrap: break-word;
         }
         
-        .pivot-left { }
+        .pivot-left { color: #e4e4e7; }
         .pivot-center { color: #ef4444; }
-        .pivot-right { }
+        .pivot-right { color: #e4e4e7; }
         
         .wpm-slider {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 10px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 5px;
+            height: 6px;
+            background: #3f3f46;
+            border-radius: 3px;
             outline: none;
         }
         
         .wpm-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            width: 24px;
+            height: 24px;
+            background: #f4f4f5;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             transition: transform 0.15s ease;
         }
         
@@ -67,63 +64,76 @@
         }
         
         .wpm-slider::-moz-range-thumb {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            width: 24px;
+            height: 24px;
+            background: #f4f4f5;
             border-radius: 50%;
             cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
         .wpm-slider::-moz-range-track {
-            background: rgba(255,255,255,0.15);
-            border-radius: 5px;
-            height: 10px;
+            background: #3f3f46;
+            border-radius: 3px;
+            height: 6px;
         }
         
         .progress-track {
-            height: 6px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 3px;
+            height: 4px;
+            background: #3f3f46;
+            border-radius: 2px;
             cursor: pointer;
         }
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            border-radius: 3px;
+            background: #a1a1aa;
+            border-radius: 2px;
             transition: width 0.1s ease-out;
         }
         
         .progress-thumb {
-            width: 18px;
-            height: 18px;
-            background: white;
+            width: 16px;
+            height: 16px;
+            background: #f4f4f5;
             border-radius: 50%;
             position: absolute;
             top: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             cursor: grab;
         }
         
         .progress-thumb:active {
             cursor: grabbing;
-            transform: translate(-50%, -50%) scale(1.2);
+            transform: translate(-50%, -50%) scale(1.15);
+        }
+        
+        .chapter-progress-track {
+            height: 2px;
+            background: #27272a;
+            border-radius: 1px;
+        }
+        
+        .chapter-progress-fill {
+            height: 100%;
+            background: rgba(239, 68, 68, 0.6);
+            border-radius: 1px;
+            transition: width 0.1s ease-out;
         }
         
         .context-view {
             font-family: 'Literata', Georgia, serif;
-            line-height: 1.8;
+            line-height: 2;
         }
         
         .context-current-word {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background: #ef4444;
             color: white;
             padding: 2px 8px;
             border-radius: 4px;
-            font-weight: 600;
+            font-weight: 500;
         }
         
         .reading-container {
@@ -134,7 +144,7 @@
             max-width: 90vw;
             max-height: 50vh;
             overflow: hidden;
-            padding: 1rem;
+            padding: 1.5rem;
         }
         
         .word-size-sm { font-size: clamp(1.5rem, 5vw, 2rem); }
@@ -143,209 +153,260 @@
         .word-size-xl { font-size: clamp(3rem, 11vw, 5rem); }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
+            from { opacity: 0; transform: scale(0.98); }
             to { opacity: 1; transform: scale(1); }
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        @keyframes slideUp {
+        @keyframes toastIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
-        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
-        .animate-slide-up { animation: slideUp 0.3s ease-out; }
-        
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .home-btn:hover { background: rgba(255,255,255,0.1); }
-        
-        .continue-btn {
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
         }
-        .continue-btn:hover {
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+        
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        .animate-toast-in { animation: toastIn 0.3s ease-out; }
+        .animate-toast-out { animation: toastOut 0.3s ease-out forwards; }
+        
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+        
+        .chapter-select {
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            cursor: pointer;
+            max-width: 100%;
+        }
+        
+        .chapter-select:focus {
+            border-color: #52525b;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 6rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen overflow-hidden">
+<body class="bg-zinc-900 text-zinc-200 min-h-screen overflow-hidden">
     
     <div id="app" class="h-screen flex flex-col">
         
-        <header class="flex items-center justify-between px-4 py-3 bg-slate-800/50 backdrop-blur-sm z-10 flex-shrink-0">
-            <button id="homeBtn" class="home-btn flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer">
-                <span class="text-2xl">📖</span>
-                <h1 class="text-lg font-semibold">RSVP Reader</h1>
+        <!-- Header -->
+        <header class="flex items-center justify-between px-5 py-4 bg-zinc-900/80 backdrop-blur-sm z-10 flex-shrink-0 border-b border-zinc-800/50">
+            <button id="homeBtn" class="flex items-center gap-3 px-2 py-1 rounded-lg transition-all cursor-pointer hover:bg-zinc-800/50">
+                <span class="text-xl">📖</span>
+                <h1 class="text-base font-medium text-zinc-300">RSVP Reader</h1>
             </button>
-            <div class="flex items-center gap-2">
-                <span id="wordCounter" class="text-sm text-slate-400">0 / 0</span>
-                <button id="settingsBtn" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+            <div class="flex items-center gap-3">
+                <span id="wordCounter" class="text-sm text-zinc-500 font-light">0 / 0</span>
+                <button id="settingsBtn" class="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
                 </button>
             </div>
         </header>
         
-        <main id="readingArea" class="flex-1 flex items-center justify-center relative px-4 overflow-hidden">
+        <!-- Chapter Info Bar (hidden by default) -->
+        <div id="chapterBar" class="hidden px-5 py-2 bg-zinc-800/30 border-b border-zinc-800/30">
+            <p id="chapterInfo" class="text-sm text-zinc-500 font-light truncate">Capítulo 1 · 0%</p>
+        </div>
+        
+        <!-- Main Area -->
+        <main id="readingArea" class="flex-1 flex items-center justify-center relative px-6 py-8 overflow-hidden">
             
-            <div id="welcomeScreen" class="text-center max-w-md mx-auto w-full">
-                <div class="text-6xl mb-6">📚</div>
-                <h2 class="text-2xl font-bold mb-4">Lectura Rápida RSVP</h2>
-                <p class="text-slate-400 mb-8">Carga un archivo de texto (.txt) o pega tu texto para comenzar a leer a alta velocidad.</p>
+            <!-- Welcome Screen -->
+            <div id="welcomeScreen" class="text-center max-w-sm mx-auto w-full">
+                <div class="text-5xl mb-8 opacity-80">📚</div>
+                <h2 class="text-2xl font-medium mb-3 text-zinc-100">Lectura Rápida</h2>
+                <p class="text-zinc-500 mb-10 text-sm leading-relaxed">Carga un archivo de texto para comenzar a leer a alta velocidad con la técnica RSVP.</p>
                 
-                <div id="continueReadingContainer" class="hidden mb-6 animate-slide-up">
-                    <button id="continueReadingBtn" class="continue-btn w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl transition-all font-semibold text-left flex items-center gap-4">
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <!-- Continue Reading -->
+                <div id="continueReadingContainer" class="hidden mb-8 animate-slide-up">
+                    <button id="continueReadingBtn" class="w-full py-5 px-5 bg-zinc-800 hover:bg-zinc-700/80 rounded-xl transition-all text-left flex items-center gap-4 border border-zinc-700/50">
+                        <div class="w-11 h-11 bg-zinc-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-zinc-300" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-xs text-blue-200 uppercase tracking-wide mb-1">Continuar Lectura</div>
-                            <div id="savedBookTitle" class="font-bold truncate">Título del libro</div>
-                            <div id="savedBookProgress" class="text-sm text-blue-200">50% completado</div>
+                            <div class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Continuar</div>
+                            <div id="savedBookTitle" class="font-medium text-zinc-200 truncate text-sm">Título del libro</div>
+                            <div id="savedBookProgress" class="text-xs text-zinc-500 mt-0.5">50% completado</div>
                         </div>
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 flex-shrink-0 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
                 </div>
                 
+                <!-- Actions -->
                 <div class="space-y-4">
-                    <label class="block w-full py-4 px-6 bg-purple-600 hover:bg-purple-700 rounded-xl cursor-pointer transition-colors font-semibold">
-                        <input type="file" id="epubInput" accept=".epub" class="hidden">
-                        📕 Cargar EPUB
-                    </label>
-                    
-                    <label class="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer transition-colors font-semibold">
+                    <label class="block w-full py-4 px-5 bg-zinc-800 hover:bg-zinc-700/80 rounded-xl cursor-pointer transition-colors font-medium text-sm border border-zinc-700/50">
                         <input type="file" id="fileInput" accept=".txt" class="hidden">
                         📄 Cargar Archivo TXT
                     </label>
                     
-                    <button id="pasteTextBtn" class="w-full py-4 px-6 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
+                    <button id="pasteTextBtn" class="w-full py-4 px-5 bg-zinc-800/60 hover:bg-zinc-800 rounded-xl transition-colors font-medium text-sm text-zinc-300 border border-zinc-800">
                         📋 Pegar Texto
                     </button>
                     
-                    <button id="loadSampleBtn" class="w-full py-3 px-6 text-slate-400 hover:text-white transition-colors text-sm">
-                        O prueba con un texto de ejemplo →
+                    <button id="loadSampleBtn" class="w-full py-3 px-5 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
+                        Probar con texto de ejemplo →
                     </button>
                 </div>
                 
-                <div class="mt-8 pt-6 border-t border-slate-700">
-                    <a href="https://convertio.co/es/pdf-epub/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v6h6"/>
-                        </svg>
-                        ¿Tienes un PDF? Conviértelo a EPUB aquí
+                <!-- PDF Converter Link -->
+                <div class="mt-10 pt-6 border-t border-zinc-800">
+                    <a href="https://convertio.co/es/pdf-txt/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        ¿Tienes un PDF? Conviértelo a TXT aquí
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
                     </a>
                 </div>
             </div>
             
+            <!-- RSVP Display -->
             <div id="rsvpDisplay" class="hidden w-full flex flex-col items-center justify-center">
                 <div class="relative reading-container">
-                    <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -top-6"></div>
-                    <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -bottom-6"></div>
+                    <div class="absolute left-1/2 -translate-x-1/2 w-px h-3 bg-red-500/40 -top-5"></div>
+                    <div class="absolute left-1/2 -translate-x-1/2 w-px h-3 bg-red-500/40 -bottom-5"></div>
                     <div id="currentWord" class="rsvp-word word-size-lg font-medium tracking-wide flex items-center justify-center whitespace-nowrap">
                         <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
                     </div>
                 </div>
-                <p id="tapHint" class="text-slate-500 text-sm mt-8 animate-pulse-slow">Toca para pausar</p>
+                <p id="tapHint" class="text-zinc-600 text-xs mt-10">Toca para pausar</p>
             </div>
             
-            <div id="contextView" class="hidden w-full max-w-2xl mx-auto px-4">
-                <div class="bg-slate-800/80 backdrop-blur rounded-2xl p-6 max-h-[60vh] overflow-y-auto scrollbar-hide">
+            <!-- Context View -->
+            <div id="contextView" class="hidden w-full max-w-2xl mx-auto px-2">
+                <div class="bg-zinc-800/50 rounded-2xl p-6 max-h-[55vh] overflow-y-auto scrollbar-thin">
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm text-slate-400 flex items-center gap-2">
-                            <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                            Modo Contexto (PAUSADO)
+                        <span class="text-xs text-zinc-500 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></span>
+                            Pausado
                         </span>
-                        <span class="text-xs text-slate-500">50 palabras antes • 20 después</span>
+                        <span class="text-xs text-zinc-600">±70 palabras</span>
                     </div>
-                    <p id="contextText" class="context-view text-xl text-slate-200 leading-relaxed"></p>
+                    <p id="contextText" class="context-view text-lg text-zinc-300"></p>
                 </div>
-                <p class="text-center text-slate-500 text-sm mt-4">Toca ▶ para continuar leyendo</p>
+                <p class="text-center text-zinc-600 text-xs mt-5">Toca ▶ para continuar</p>
             </div>
             
-            <!-- WPM Slider movido al overlay de controles -->
-            
-            <div id="wpmFeedback" class="hidden absolute top-4 right-4 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg">
-                <span class="text-2xl font-bold text-blue-400" id="wpmValueFeedback">300</span>
-                <span class="text-sm text-slate-400 ml-1">WPM</span>
+            <!-- WPM Feedback (keyboard) -->
+            <div id="wpmFeedback" class="hidden absolute top-4 right-4 bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700">
+                <span class="text-xl font-medium text-zinc-200" id="wpmValueFeedback">300</span>
+                <span class="text-xs text-zinc-500 ml-1">WPM</span>
             </div>
             
         </main>
         
-        <div id="controlsOverlay" class="hidden bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-8 pb-6 px-4 flex-shrink-0">
+        <!-- Controls Overlay -->
+        <div id="controlsOverlay" class="hidden bg-gradient-to-t from-zinc-900 via-zinc-900/98 to-transparent pt-6 pb-8 px-6 flex-shrink-0">
             
-            <!-- WPM Slider Horizontal -->
-            <div id="wpmSliderContainer" class="hidden mb-6 px-4">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-slate-400">Velocidad</span>
-                    <div class="bg-slate-800/80 px-3 py-1 rounded-full">
-                        <span class="text-lg font-bold text-blue-400" id="wpmValue">300</span>
-                        <span class="text-xs text-slate-400 ml-1">WPM</span>
+            <!-- Chapter Selector -->
+            <div id="chapterSelectorContainer" class="hidden mb-5">
+                <select id="chapterSelect" class="chapter-select w-full">
+                    <option value="0">Sin capítulos detectados</option>
+                </select>
+            </div>
+            
+            <!-- WPM Slider -->
+            <div id="wpmSliderContainer" class="mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-zinc-500">Velocidad</span>
+                    <div class="bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700/50">
+                        <span class="text-base font-medium text-zinc-200" id="wpmValue">300</span>
+                        <span class="text-xs text-zinc-500 ml-1">WPM</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-500 w-12 text-left">Lento</span>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-zinc-600 w-10">Lento</span>
                     <input type="range" id="wpmSlider" class="wpm-slider flex-1" min="100" max="800" value="300" step="10">
-                    <span class="text-xs text-slate-500 w-12 text-right">Rápido</span>
+                    <span class="text-xs text-zinc-600 w-10 text-right">Rápido</span>
                 </div>
             </div>
             
-            <div id="progressContainer" class="mb-6 px-2">
-                <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+            <!-- Progress Bars -->
+            <div id="progressContainer" class="mb-6">
+                <div class="flex items-center justify-between text-xs text-zinc-500 mb-2">
                     <span id="timeElapsed">0:00</span>
                     <span id="timeRemaining">-0:00</span>
                 </div>
+                <!-- Global Progress -->
                 <div class="progress-track relative" id="progressTrack">
                     <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                     <div class="progress-thumb" id="progressThumb" style="left: 0%"></div>
                 </div>
+                <!-- Chapter Progress (local) -->
+                <div class="chapter-progress-track mt-1.5" id="chapterProgressTrack">
+                    <div class="chapter-progress-fill" id="chapterProgressFill" style="width: 0%"></div>
+                </div>
             </div>
             
-            <div class="flex items-center justify-center gap-4">
-                <button id="skipBackBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
-                    <span class="text-xl">⏪</span>
-                    <span class="text-[10px] text-slate-400">-10s</span>
+            <!-- Playback Controls -->
+            <div class="flex items-center justify-center gap-5">
+                <button id="skipBackBtn" class="flex flex-col items-center justify-center w-14 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all active:scale-95 border border-zinc-700/50">
+                    <span class="text-lg">⏪</span>
+                    <span class="text-[9px] text-zinc-500">-10s</span>
                 </button>
                 
-                <button id="playPauseBtn" class="flex items-center justify-center w-20 h-20 bg-blue-600 hover:bg-blue-700 rounded-full transition-all active:scale-95 shadow-lg shadow-blue-600/30">
-                    <svg id="playIcon" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <button id="playPauseBtn" class="flex items-center justify-center w-16 h-16 bg-zinc-100 hover:bg-white rounded-full transition-all active:scale-95 shadow-lg">
+                    <svg id="playIcon" class="w-8 h-8 ml-0.5 text-zinc-900" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
-                    <svg id="pauseIcon" class="w-10 h-10 hidden" fill="currentColor" viewBox="0 0 24 24">
+                    <svg id="pauseIcon" class="w-8 h-8 hidden text-zinc-900" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
                     </svg>
                 </button>
                 
-                <button id="skipForwardBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
-                    <span class="text-xl">⏩</span>
-                    <span class="text-[10px] text-slate-400">+10s</span>
+                <button id="skipForwardBtn" class="flex flex-col items-center justify-center w-14 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all active:scale-95 border border-zinc-700/50">
+                    <span class="text-lg">⏩</span>
+                    <span class="text-[9px] text-zinc-500">+10s</span>
                 </button>
             </div>
             
-            <div class="flex items-center justify-center gap-8 mt-4">
-                <button id="restartBtn" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Secondary Actions -->
+            <div class="flex items-center justify-center gap-8 mt-5">
+                <button id="restartBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors text-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
                     Reiniciar
                 </button>
-                <button id="newTextBtn" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="newTextBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors text-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
                     Nuevo Texto
@@ -355,63 +416,60 @@
         
     </div>
     
-    <div id="pasteModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in">
-            <div class="flex items-center justify-between p-4 border-b border-slate-700">
-                <h3 class="text-lg font-semibold">Pegar Texto</h3>
-                <button id="closePasteModal" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+    
+    <!-- Paste Modal -->
+    <div id="pasteModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div class="bg-zinc-800 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in border border-zinc-700/50">
+            <div class="flex items-center justify-between p-5 border-b border-zinc-700/50">
+                <h3 class="text-base font-medium">Pegar Texto</h3>
+                <button id="closePasteModal" class="p-2 hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-            <div class="p-4 flex-1 overflow-hidden">
-                <input type="text" id="bookTitleInput" class="w-full bg-slate-900 rounded-xl p-3 text-white mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Título del libro (opcional)">
-                <textarea id="pasteTextArea" class="w-full h-56 bg-slate-900 rounded-xl p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pega aquí el texto que deseas leer..."></textarea>
+            <div class="p-5 flex-1 overflow-hidden">
+                <input type="text" id="bookTitleInput" class="w-full bg-zinc-900 rounded-xl p-4 text-zinc-200 mb-4 focus:outline-none focus:ring-1 focus:ring-zinc-600 text-sm border border-zinc-700/50" placeholder="Título del libro (opcional)">
+                <textarea id="pasteTextArea" class="w-full h-48 bg-zinc-900 rounded-xl p-4 text-zinc-200 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-600 text-sm border border-zinc-700/50" placeholder="Pega aquí el texto..."></textarea>
             </div>
-            <div class="p-4 border-t border-slate-700">
-                <button id="startReadingBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition-colors">
+            <div class="p-5 border-t border-zinc-700/50">
+                <button id="startReadingBtn" class="w-full py-4 bg-zinc-100 hover:bg-white text-zinc-900 rounded-xl font-medium transition-colors text-sm">
                     Comenzar Lectura
                 </button>
             </div>
         </div>
     </div>
     
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 rounded-2xl w-full max-w-md animate-fade-in">
-            <div class="flex items-center justify-between p-4 border-b border-slate-700">
-                <h3 class="text-lg font-semibold">Configuración</h3>
-                <button id="closeSettingsModal" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div class="bg-zinc-800 rounded-2xl w-full max-w-sm animate-fade-in border border-zinc-700/50">
+            <div class="flex items-center justify-between p-5 border-b border-zinc-700/50">
+                <h3 class="text-base font-medium">Configuración</h3>
+                <button id="closeSettingsModal" class="p-2 hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-            <div class="p-4 space-y-6">
+            <div class="p-5 space-y-6">
                 <div>
-                    <label class="text-sm text-slate-400 block mb-2">Tamaño de Fuente</label>
-                    <div class="flex items-center gap-4">
-                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-sm" data-size="word-size-sm">A</button>
-                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-base" data-size="word-size-md">A</button>
-                        <button class="font-size-btn flex-1 py-3 bg-blue-600 rounded-lg text-lg" data-size="word-size-lg">A</button>
-                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-xl" data-size="word-size-xl">A</button>
+                    <label class="text-xs text-zinc-500 block mb-3">Tamaño de Fuente</label>
+                    <div class="flex items-center gap-3">
+                        <button class="font-size-btn flex-1 py-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg text-sm transition-colors border border-zinc-600/30" data-size="word-size-sm">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg text-base transition-colors border border-zinc-600/30" data-size="word-size-md">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-zinc-600 rounded-lg text-lg border border-zinc-500/50" data-size="word-size-lg">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg text-xl transition-colors border border-zinc-600/30" data-size="word-size-xl">A</button>
                     </div>
                 </div>
                 
                 <div>
-                    <label class="text-sm text-slate-400 block mb-2">Tema</label>
-                    <div class="flex items-center gap-4">
-                        <button id="themeDark" class="flex-1 py-3 bg-slate-900 border-2 border-blue-500 rounded-xl text-sm">🌙 Oscuro</button>
-                        <button id="themeLight" class="flex-1 py-3 bg-slate-700 border-2 border-transparent rounded-xl text-sm">☀️ Claro</button>
-                    </div>
-                </div>
-                
-                <div>
-                    <label class="text-sm text-slate-400 block mb-2">Palabras por Flash</label>
-                    <div class="flex items-center gap-4">
-                        <button class="chunk-btn flex-1 py-2 bg-blue-600 rounded-lg text-sm" data-chunk="1">1</button>
-                        <button class="chunk-btn flex-1 py-2 bg-slate-700 rounded-lg text-sm" data-chunk="2">2</button>
-                        <button class="chunk-btn flex-1 py-2 bg-slate-700 rounded-lg text-sm" data-chunk="3">3</button>
+                    <label class="text-xs text-zinc-500 block mb-3">Palabras por Flash</label>
+                    <div class="flex items-center gap-3">
+                        <button class="chunk-btn flex-1 py-3 bg-zinc-600 rounded-lg text-sm border border-zinc-500/50" data-chunk="1">1</button>
+                        <button class="chunk-btn flex-1 py-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg text-sm transition-colors border border-zinc-600/30" data-chunk="2">2</button>
+                        <button class="chunk-btn flex-1 py-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg text-sm transition-colors border border-zinc-600/30" data-chunk="3">3</button>
                     </div>
                 </div>
             </div>
@@ -422,19 +480,29 @@
         class RSVPReader {
             constructor() {
                 this.words = [];
+                this.rawText = '';
                 this.currentIndex = 0;
                 this.isPlaying = false;
                 this.wpm = 300;
                 this.chunkSize = 1;
-                this.intervalId = null;
+                this.playTimeoutId = null;
+                this.autoSaveIntervalId = null;
                 this.isDraggingProgress = false;
                 this.bookTitle = '';
+                this.fileHash = '';
                 this.isInReadingView = false;
                 
                 this.fontSize = 'word-size-lg';
-                this.contextBefore = 50;
-                this.contextAfter = 20;
+                this.contextBefore = 70;
+                this.contextAfter = 70;
                 this.skipSeconds = 10;
+                
+                // Chapter detection
+                this.chapters = [];
+                this.currentChapter = null;
+                
+                // Word metadata for natural rhythm
+                this.wordMeta = [];
                 
                 this.cacheElements();
                 this.bindEvents();
@@ -448,6 +516,13 @@
                 this.rsvpDisplay = document.getElementById('rsvpDisplay');
                 this.contextView = document.getElementById('contextView');
                 this.controlsOverlay = document.getElementById('controlsOverlay');
+                
+                this.chapterBar = document.getElementById('chapterBar');
+                this.chapterInfo = document.getElementById('chapterInfo');
+                this.chapterSelectorContainer = document.getElementById('chapterSelectorContainer');
+                this.chapterSelect = document.getElementById('chapterSelect');
+                this.chapterProgressFill = document.getElementById('chapterProgressFill');
+                this.chapterProgressTrack = document.getElementById('chapterProgressTrack');
                 
                 this.continueReadingContainer = document.getElementById('continueReadingContainer');
                 this.continueReadingBtn = document.getElementById('continueReadingBtn');
@@ -484,9 +559,9 @@
                 this.settingsModal = document.getElementById('settingsModal');
                 this.pasteTextArea = document.getElementById('pasteTextArea');
                 this.bookTitleInput = document.getElementById('bookTitleInput');
+                this.toastContainer = document.getElementById('toastContainer');
                 
                 this.fileInput = document.getElementById('fileInput');
-                this.epubInput = document.getElementById('epubInput');
                 this.pasteTextBtn = document.getElementById('pasteTextBtn');
                 this.loadSampleBtn = document.getElementById('loadSampleBtn');
                 this.startReadingBtn = document.getElementById('startReadingBtn');
@@ -500,7 +575,6 @@
                 this.continueReadingBtn.addEventListener('click', () => this.continueReading());
                 
                 this.fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
-                this.epubInput.addEventListener('change', (e) => this.handleFileLoad(e));
                 this.pasteTextBtn.addEventListener('click', () => this.showPasteModal());
                 this.loadSampleBtn.addEventListener('click', () => this.loadSampleText());
                 this.startReadingBtn.addEventListener('click', () => this.startFromPaste());
@@ -512,17 +586,15 @@
                 this.restartBtn.addEventListener('click', () => this.restart());
                 this.newTextBtn.addEventListener('click', () => this.goHomeAndReset());
                 
+                this.chapterSelect.addEventListener('change', (e) => this.jumpToChapter(parseInt(e.target.value)));
+                
                 document.getElementById('readingArea').addEventListener('click', (e) => {
-                    if (this.isPlaying && !e.target.closest('button') && !e.target.closest('input')) {
+                    if (this.isPlaying && !e.target.closest('button') && !e.target.closest('input') && !e.target.closest('select')) {
                         this.pause();
                     }
                 });
                 
                 this.wpmSlider.addEventListener('input', (e) => this.handleWPMChange(e));
-                this.wpmSlider.addEventListener('touchstart', () => this.showWPMFeedback());
-                this.wpmSlider.addEventListener('touchend', () => this.hideWPMFeedback());
-                this.wpmSlider.addEventListener('mousedown', () => this.showWPMFeedback());
-                this.wpmSlider.addEventListener('mouseup', () => this.hideWPMFeedback());
                 
                 this.setupProgressScrubber();
                 
@@ -556,6 +628,7 @@
                     this.currentIndex = Math.floor(percent * this.words.length);
                     this.updateProgress();
                     this.displayCurrentWord();
+                    this.updateChapterInfo();
                 };
                 
                 const startDrag = (e) => {
@@ -612,13 +685,253 @@
                 }
             }
             
+            // ==================== TOAST ====================
+            
+            showToast(message, duration = 3000) {
+                const toast = document.createElement('div');
+                toast.className = 'toast animate-toast-in';
+                toast.textContent = message;
+                this.toastContainer.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.classList.remove('animate-toast-in');
+                    toast.classList.add('animate-toast-out');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            
+            // ==================== FILE HASH ====================
+            
+            generateFileHash(filename, content) {
+                // Simple hash: filename + length + first 100 chars
+                const sample = content.substring(0, 100).replace(/\s/g, '');
+                return `${filename}-${content.length}-${sample.length}`;
+            }
+            
+            // ==================== CHAPTER DETECTION (REFINED) ====================
+            
+            parseChapters(text) {
+                const lines = text.split('\n');
+                const chapters = [];
+                let wordIndex = 0;
+                
+                const MAX_TITLE_LENGTH = 80;
+                
+                // Keywords that indicate a chapter/section
+                const chapterKeywords = /\b(CAPÍTULO|CAPITULO|CHAPTER|PARTE|PART|SECCIÓN|SECCION|SECTION|LIBRO|BOOK)\b/i;
+                
+                // Patterns for chapter detection
+                const romanNumeralOnly = /^([IVXLCDM]+)\s*$/;
+                const arabicNumberOnly = /^(\d{1,3})\s*$/;
+                const numberedWithKeyword = /^(\d+)\.\s+.*/;
+                
+                // Subtitle patterns
+                const subtitlePatterns = [
+                    /^[A-ZÁÉÍÓÚÑ\s]{3,50}$/,
+                    /^[A-Z][a-záéíóúñ]+(\s+[A-Z][a-záéíóúñ]+){0,6}$/
+                ];
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    const wordsInLine = line.split(/\s+/).filter(w => w.length > 0);
+                    
+                    if (line.length > 0 && line.length <= MAX_TITLE_LENGTH) {
+                        let isChapter = false;
+                        
+                        // Check for chapter keywords (most reliable)
+                        if (chapterKeywords.test(line)) {
+                            isChapter = true;
+                        }
+                        // Check for roman numeral alone
+                        else if (romanNumeralOnly.test(line)) {
+                            isChapter = true;
+                        }
+                        // Check for arabic number alone (1-999)
+                        else if (arabicNumberOnly.test(line)) {
+                            isChapter = true;
+                        }
+                        // Check for numbered lines (1. Something) - only if ALL CAPS or has keyword
+                        else if (numberedWithKeyword.test(line)) {
+                            // Only accept if line is ALL CAPS or contains chapter keyword
+                            const isAllCaps = line === line.toUpperCase() && /[A-Z]/.test(line);
+                            if (isAllCaps || chapterKeywords.test(line)) {
+                                isChapter = true;
+                            }
+                        }
+                        
+                        if (isChapter) {
+                            // Look ahead for subtitle
+                            let subtitle = '';
+                            if (i + 1 < lines.length) {
+                                const nextLine = lines[i + 1].trim();
+                                if (nextLine.length > 0 && nextLine.length < 60 && nextLine.length <= MAX_TITLE_LENGTH) {
+                                    for (const subPattern of subtitlePatterns) {
+                                        if (subPattern.test(nextLine)) {
+                                            subtitle = nextLine;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            chapters.push({
+                                title: line + (subtitle ? ' — ' + subtitle : ''),
+                                wordIndex: wordIndex,
+                                lineIndex: i
+                            });
+                        }
+                    }
+                    
+                    wordIndex += wordsInLine.length;
+                }
+                
+                return chapters;
+            }
+            
+            updateChapterInfo() {
+                if (this.chapters.length === 0) {
+                    this.chapterBar.classList.add('hidden');
+                    this.chapterSelectorContainer.classList.add('hidden');
+                    this.chapterProgressTrack.classList.add('hidden');
+                    return;
+                }
+                
+                this.chapterProgressTrack.classList.remove('hidden');
+                
+                // Find current chapter and next chapter
+                let currentChapterIdx = 0;
+                for (let i = this.chapters.length - 1; i >= 0; i--) {
+                    if (this.currentIndex >= this.chapters[i].wordIndex) {
+                        currentChapterIdx = i;
+                        break;
+                    }
+                }
+                
+                const currentChapter = this.chapters[currentChapterIdx];
+                this.currentChapter = currentChapter;
+                
+                // Calculate chapter progress
+                const chapterStart = currentChapter.wordIndex;
+                const chapterEnd = currentChapterIdx < this.chapters.length - 1 
+                    ? this.chapters[currentChapterIdx + 1].wordIndex 
+                    : this.words.length;
+                const chapterLength = chapterEnd - chapterStart;
+                const chapterProgress = chapterLength > 0 
+                    ? ((this.currentIndex - chapterStart) / chapterLength) * 100 
+                    : 0;
+                
+                this.chapterProgressFill.style.width = Math.min(100, Math.max(0, chapterProgress)) + '%';
+                
+                const globalProgress = Math.round((this.currentIndex / this.words.length) * 100);
+                this.chapterInfo.textContent = currentChapter.title + ' · ' + globalProgress + '%';
+                this.chapterBar.classList.remove('hidden');
+                
+                // Update selector
+                if (this.chapterSelect.value != currentChapterIdx) {
+                    this.chapterSelect.value = currentChapterIdx;
+                }
+            }
+            
+            populateChapterSelect() {
+                this.chapterSelect.innerHTML = '';
+                
+                if (this.chapters.length === 0) {
+                    this.chapterSelect.innerHTML = '<option value="0">Sin capítulos detectados</option>';
+                    this.chapterSelectorContainer.classList.add('hidden');
+                    return;
+                }
+                
+                this.chapters.forEach((chapter, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = chapter.title.length > 40 
+                        ? chapter.title.substring(0, 40) + '...' 
+                        : chapter.title;
+                    this.chapterSelect.appendChild(option);
+                });
+                
+                this.chapterSelectorContainer.classList.remove('hidden');
+            }
+            
+            jumpToChapter(chapterIndex) {
+                if (chapterIndex >= 0 && chapterIndex < this.chapters.length) {
+                    this.currentIndex = this.chapters[chapterIndex].wordIndex;
+                    this.displayCurrentWord();
+                    this.updateProgress();
+                    this.updateChapterInfo();
+                    if (!this.isPlaying) {
+                        this.renderContextText();
+                    }
+                    this.saveState();
+                }
+            }
+            
+            // ==================== WORD METADATA FOR NATURAL RHYTHM ====================
+            
+            buildWordMeta(text) {
+                // Split by whitespace but keep track of paragraph breaks
+                const paragraphs = text.split(/\n\s*\n/);
+                const meta = [];
+                
+                paragraphs.forEach((para, pIdx) => {
+                    const words = para.replace(/\s+/g, ' ').trim().split(' ').filter(w => w.length > 0);
+                    words.forEach((word, wIdx) => {
+                        const lastChar = word.slice(-1);
+                        const isParagraphEnd = wIdx === words.length - 1 && pIdx < paragraphs.length - 1;
+                        
+                        meta.push({
+                            word: word,
+                            endsWithComma: lastChar === ',' || lastChar === ';',
+                            endsWithPeriod: lastChar === '.' || lastChar === '?' || lastChar === '!',
+                            isParagraphEnd: isParagraphEnd,
+                            isLong: word.length > 12
+                        });
+                    });
+                });
+                
+                return meta;
+            }
+            
+            getDelayMultiplier(index) {
+                if (index >= this.wordMeta.length) return 1;
+                
+                const meta = this.wordMeta[index];
+                
+                if (meta.isParagraphEnd) return 3.0;
+                if (meta.endsWithPeriod) return 2.2;
+                if (meta.endsWithComma) return 1.5;
+                if (meta.isLong) return 1.3;
+                
+                return 1;
+            }
+            
+            // ==================== NUMBER FORMATTING ====================
+            
+            formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            }
+            
+            formatTime(minutes) {
+                const totalSeconds = Math.floor(minutes * 60);
+                const hours = Math.floor(totalSeconds / 3600);
+                const mins = Math.floor((totalSeconds % 3600) / 60);
+                const secs = totalSeconds % 60;
+                
+                if (hours > 0) {
+                    return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+                }
+                return mins + ':' + secs.toString().padStart(2, '0');
+            }
+            
+            // ==================== NAVIGATION ====================
+            
             goHome() {
                 this.pause();
                 this.isInReadingView = false;
                 this.rsvpDisplay.classList.add('hidden');
                 this.contextView.classList.add('hidden');
                 this.controlsOverlay.classList.add('hidden');
-                this.wpmSliderContainer.classList.add('hidden');
+                this.chapterBar.classList.add('hidden');
                 this.welcomeScreen.classList.remove('hidden');
                 this.checkForContinueReading();
                 this.saveState();
@@ -630,7 +943,7 @@
                 this.rsvpDisplay.classList.add('hidden');
                 this.contextView.classList.add('hidden');
                 this.controlsOverlay.classList.add('hidden');
-                this.wpmSliderContainer.classList.add('hidden');
+                this.chapterBar.classList.add('hidden');
                 this.welcomeScreen.classList.remove('hidden');
                 this.checkForContinueReading();
             }
@@ -640,6 +953,7 @@
                     this.showReadingUI();
                     this.displayCurrentWord();
                     this.updateProgress();
+                    this.updateChapterInfo();
                     this.showContextView();
                 }
             }
@@ -648,119 +962,68 @@
                 if (this.words.length > 0 && this.bookTitle) {
                     const progress = Math.round((this.currentIndex / this.words.length) * 100);
                     this.savedBookTitle.textContent = this.bookTitle;
-                    this.savedBookProgress.textContent = progress + '% completado • ' + this.words.length + ' palabras';
+                    this.savedBookProgress.textContent = progress + '% · ' + this.formatNumber(this.words.length) + ' palabras';
                     this.continueReadingContainer.classList.remove('hidden');
                 } else {
                     this.continueReadingContainer.classList.add('hidden');
                 }
             }
             
-            async handleFileLoad(e) {
+            // ==================== FILE HANDLING ====================
+            
+            handleFileLoad(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 this.bookTitle = file.name.replace(/\.[^/.]+$/, '');
-                const extension = file.name.split('.').pop().toLowerCase();
-                
-                if (extension === 'epub') {
-                    await this.processEpub(file);
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = (event) => this.loadText(event.target.result);
-                    reader.readAsText(file);
-                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    const newHash = this.generateFileHash(file.name, content);
+                    
+                    // Check if we have saved position for this file
+                    const savedPosition = this.getSavedPositionForFile(newHash);
+                    
+                    this.loadText(content, newHash);
+                    
+                    if (savedPosition !== null && savedPosition > 0) {
+                        this.currentIndex = Math.min(savedPosition, this.words.length - 1);
+                        this.displayCurrentWord();
+                        this.updateProgress();
+                        this.updateChapterInfo();
+                        this.showToast(`Restaurado en palabra ${this.formatNumber(this.currentIndex + 1)}`);
+                        console.log(`Restaurado en palabra [${this.currentIndex + 1}]`);
+                    }
+                };
+                reader.readAsText(file);
                 e.target.value = '';
             }
             
-            async processEpub(file) {
-                this.showProcessingMessage();
+            getSavedPositionForFile(fileHash) {
+                try {
+                    const positions = JSON.parse(localStorage.getItem('rsvp-file-positions') || '{}');
+                    return positions[fileHash] || null;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            saveFilePosition() {
+                if (!this.fileHash || this.words.length === 0) return;
                 
                 try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const book = ePub(arrayBuffer);
+                    const positions = JSON.parse(localStorage.getItem('rsvp-file-positions') || '{}');
+                    positions[this.fileHash] = this.currentIndex;
                     
-                    await book.ready;
-                    
-                    const spine = book.spine;
-                    let fullText = '';
-                    
-                    for (let i = 0; i < spine.length; i++) {
-                        const item = spine.get(i);
-                        if (item) {
-                            try {
-                                const doc = await item.load(book.load.bind(book));
-                                if (doc && doc.body) {
-                                    const chapterText = this.extractTextFromHTML(doc.body);
-                                    if (chapterText.trim()) {
-                                        fullText += chapterText + ' ';
-                                    }
-                                }
-                            } catch (chapterError) {
-                                console.warn('Error loading chapter ' + i + ':', chapterError);
-                            }
-                        }
-                        this.updateProcessingProgress(i + 1, spine.length);
+                    // Keep only last 20 files
+                    const keys = Object.keys(positions);
+                    if (keys.length > 20) {
+                        delete positions[keys[0]];
                     }
                     
-                    this.hideProcessingMessage();
-                    
-                    if (fullText.trim()) {
-                        this.loadText(fullText);
-                    } else {
-                        alert('No se pudo extraer texto del archivo EPUB. Intenta con otro archivo.');
-                    }
-                    
-                } catch (error) {
-                    console.error('Error processing EPUB:', error);
-                    this.hideProcessingMessage();
-                    alert('Error al procesar el archivo EPUB: ' + error.message);
-                }
-            }
-            
-            extractTextFromHTML(element) {
-                const clone = element.cloneNode(true);
-                const scripts = clone.querySelectorAll('script, style, noscript');
-                scripts.forEach(el => el.remove());
-                let text = clone.textContent || clone.innerText || '';
-                text = text.replace(/\s+/g, ' ').trim();
-                return text;
-            }
-            
-            showProcessingMessage() {
-                if (!document.getElementById('processingOverlay')) {
-                    const overlay = document.createElement('div');
-                    overlay.id = 'processingOverlay';
-                    overlay.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
-                    overlay.innerHTML = `
-                        <div class="bg-slate-800 rounded-2xl p-8 text-center max-w-sm mx-4">
-                            <div class="text-5xl mb-4">📚</div>
-                            <h3 class="text-xl font-bold mb-2">Procesando EPUB...</h3>
-                            <p id="processingStatus" class="text-slate-400 text-sm mb-4">Cargando capítulos...</p>
-                            <div class="w-full bg-slate-700 rounded-full h-2">
-                                <div id="processingProgress" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(overlay);
-                }
-            }
-            
-            updateProcessingProgress(current, total) {
-                const progress = document.getElementById('processingProgress');
-                const status = document.getElementById('processingStatus');
-                if (progress) {
-                    const percent = Math.round((current / total) * 100);
-                    progress.style.width = percent + '%';
-                }
-                if (status) {
-                    status.textContent = 'Procesando capítulo ' + current + ' de ' + total + '...';
-                }
-            }
-            
-            hideProcessingMessage() {
-                const overlay = document.getElementById('processingOverlay');
-                if (overlay) {
-                    overlay.remove();
+                    localStorage.setItem('rsvp-file-positions', JSON.stringify(positions));
+                } catch (e) {
+                    console.error('Could not save file position:', e);
                 }
             }
             
@@ -777,7 +1040,8 @@
                 const text = this.pasteTextArea.value.trim();
                 if (text) {
                     this.bookTitle = this.bookTitleInput.value.trim() || 'Texto pegado';
-                    this.loadText(text);
+                    const hash = this.generateFileHash('pasted', text);
+                    this.loadText(text, hash);
                     this.hidePasteModal();
                     this.pasteTextArea.value = '';
                     this.bookTitleInput.value = '';
@@ -785,28 +1049,74 @@
             }
             
             loadSampleText() {
-                this.bookTitle = 'Texto de Ejemplo - RSVP';
-                const sampleText = 'La lectura rápida es una habilidad que te permite absorber información a velocidades increíbles. Con la técnica RSVP (Rapid Serial Visual Presentation), las palabras se muestran una a una en el centro de tu visión, eliminando los movimientos oculares innecesarios y aumentando dramáticamente tu velocidad de lectura. El cerebro humano es capaz de procesar información visual mucho más rápido de lo que normalmente leemos. Cuando leemos de forma tradicional, perdemos tiempo valioso moviendo los ojos de izquierda a derecha y saltando de línea en línea. RSVP elimina estas ineficiencias. Esta aplicación te permite practicar y mejorar tu velocidad de lectura gradualmente. Comienza con velocidades más bajas, alrededor de 200-300 palabras por minuto, y ve aumentando progresivamente mientras te sientes cómodo. Muchas personas logran leer cómodamente a 500 o incluso 700 palabras por minuto con práctica regular. Algunos consejos para mejorar: mantén tu mente enfocada, evita subvocalizar (pronunciar las palabras mentalmente), y practica regularmente. La concentración es clave para la lectura rápida. La exacción del conocimiento a través de la lectura es un proceso transformador. Cada libro, cada artículo, cada texto que consumimos nos enriquece y expande nuestra comprensión del mundo. La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infinitas posibilidades. ¡Feliz lectura rápida!';
-                this.loadText(sampleText);
+                this.bookTitle = 'Texto de Ejemplo';
+                const sampleText = `CAPÍTULO 1
+La Introducción
+
+La lectura rápida es una habilidad que te permite absorber información a velocidades increíbles. Con la técnica RSVP (Rapid Serial Visual Presentation), las palabras se muestran una a una en el centro de tu visión, eliminando los movimientos oculares innecesarios y aumentando dramáticamente tu velocidad de lectura.
+
+El cerebro humano es capaz de procesar información visual mucho más rápido de lo que normalmente leemos. Cuando leemos de forma tradicional, perdemos tiempo valioso moviendo los ojos de izquierda a derecha y saltando de línea en línea. RSVP elimina estas ineficiencias.
+
+CAPÍTULO 2
+Práctica y Mejora
+
+Esta aplicación te permite practicar y mejorar tu velocidad de lectura gradualmente. Comienza con velocidades más bajas, alrededor de 200-300 palabras por minuto, y ve aumentando progresivamente mientras te sientes cómodo.
+
+Muchas personas logran leer cómodamente a 500 o incluso 700 palabras por minuto con práctica regular. Algunos consejos para mejorar: mantén tu mente enfocada, evita subvocalizar (pronunciar las palabras mentalmente), y practica regularmente.
+
+CAPÍTULO 3
+El Conocimiento
+
+La concentración es clave para la lectura rápida. La adquisición del conocimiento a través de la lectura es un proceso transformador. Cada libro, cada artículo, cada texto que consumimos nos enriquece y expande nuestra comprensión del mundo.
+
+La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infinitas posibilidades. ¡Feliz lectura rápida!`;
+                const hash = this.generateFileHash('sample', sampleText);
+                this.loadText(sampleText, hash);
             }
             
-            loadText(text) {
-                this.words = text.replace(/\s+/g, ' ').trim().split(' ').filter(word => word.length > 0);
+            loadText(text, fileHash = '') {
+                this.rawText = text;
+                this.fileHash = fileHash;
+                
+                // Parse chapters first
+                this.chapters = this.parseChapters(text);
+                this.populateChapterSelect();
+                
+                // Build word metadata for natural rhythm
+                this.wordMeta = this.buildWordMeta(text);
+                
+                // Extract words
+                this.words = this.wordMeta.map(m => m.word);
                 if (this.words.length === 0) return;
+                
                 this.currentIndex = 0;
                 this.isInReadingView = true;
                 this.showReadingUI();
                 this.displayCurrentWord();
                 this.updateProgress();
+                this.updateChapterInfo();
                 this.saveState();
+                
+                // Start auto-save interval
+                this.startAutoSave();
             }
+            
+            startAutoSave() {
+                if (this.autoSaveIntervalId) {
+                    clearInterval(this.autoSaveIntervalId);
+                }
+                this.autoSaveIntervalId = setInterval(() => {
+                    this.saveFilePosition();
+                }, 2000);
+            }
+            
+            // ==================== UI DISPLAY ====================
             
             showReadingUI() {
                 this.isInReadingView = true;
                 this.welcomeScreen.classList.add('hidden');
                 this.rsvpDisplay.classList.remove('hidden');
                 this.controlsOverlay.classList.remove('hidden');
-                this.wpmSliderContainer.classList.remove('hidden');
             }
             
             showRSVPView() {
@@ -837,13 +1147,12 @@
             displayCurrentWord() {
                 if (this.currentIndex >= this.words.length) {
                     this.pause();
-                    this.currentWord.innerHTML = '<span class="text-green-400">¡Fin!</span>';
+                    this.currentWord.innerHTML = '<span class="text-zinc-400">¡Fin!</span>';
                     return;
                 }
                 
-                // FIXED: Use proper spacing with join(" ")
                 const chunkWords = this.words.slice(this.currentIndex, this.currentIndex + this.chunkSize);
-                const chunk = chunkWords.join(" ");
+                const chunk = chunkWords.join(' ');
                 
                 const pivotIndex = this.calculatePivot(chunk);
                 const left = chunk.substring(0, pivotIndex);
@@ -863,8 +1172,10 @@
             }
             
             updateWordCounter() {
-                this.wordCounter.textContent = (this.currentIndex + 1) + ' / ' + this.words.length;
+                this.wordCounter.textContent = this.formatNumber(this.currentIndex + 1) + ' / ' + this.formatNumber(this.words.length);
             }
+            
+            // ==================== PLAYBACK (NATURAL RHYTHM) ====================
             
             togglePlayPause() {
                 if (this.words.length === 0) return;
@@ -880,18 +1191,32 @@
                 this.tapHint.classList.remove('hidden');
                 this.showRSVPView();
                 
-                const interval = (60 / this.wpm) * 1000;
-                this.intervalId = setInterval(() => {
+                this.scheduleNextWord();
+            }
+            
+            scheduleNextWord() {
+                if (!this.isPlaying) return;
+                
+                const baseDelay = (60 / this.wpm) * 1000;
+                const multiplier = this.getDelayMultiplier(this.currentIndex);
+                const delay = baseDelay * multiplier;
+                
+                this.playTimeoutId = setTimeout(() => {
                     this.currentIndex += this.chunkSize;
+                    
                     if (this.currentIndex >= this.words.length) {
                         this.pause();
-                        this.currentWord.innerHTML = '<span class="text-green-400">¡Fin!</span>';
+                        this.currentWord.innerHTML = '<span class="text-zinc-400">¡Fin!</span>';
                         return;
                     }
+                    
                     this.displayCurrentWord();
                     this.updateProgress();
-                    this.saveState();
-                }, interval);
+                    this.updateChapterInfo();
+                    
+                    // Schedule next word with its own delay
+                    this.scheduleNextWord();
+                }, delay);
             }
             
             pause() {
@@ -899,13 +1224,19 @@
                 this.playIcon.classList.remove('hidden');
                 this.pauseIcon.classList.add('hidden');
                 this.tapHint.classList.add('hidden');
-                if (this.intervalId) {
-                    clearInterval(this.intervalId);
-                    this.intervalId = null;
+                
+                if (this.playTimeoutId) {
+                    clearTimeout(this.playTimeoutId);
+                    this.playTimeoutId = null;
                 }
+                
                 if (this.words.length > 0 && this.currentIndex < this.words.length) {
                     this.showContextView();
                 }
+                
+                // Save on pause
+                this.saveState();
+                this.saveFilePosition();
             }
             
             skip(seconds) {
@@ -914,6 +1245,7 @@
                 this.currentIndex = Math.max(0, Math.min(this.words.length - 1, this.currentIndex + wordsToSkip));
                 this.displayCurrentWord();
                 this.updateProgress();
+                this.updateChapterInfo();
                 if (!this.isPlaying && !this.contextView.classList.contains('hidden')) {
                     this.renderContextText();
                 }
@@ -924,6 +1256,7 @@
                 this.currentIndex = 0;
                 this.displayCurrentWord();
                 this.updateProgress();
+                this.updateChapterInfo();
                 if (!this.isPlaying) this.showContextView();
                 this.saveState();
             }
@@ -931,47 +1264,58 @@
             reset() {
                 this.pause();
                 this.words = [];
+                this.wordMeta = [];
                 this.currentIndex = 0;
                 this.bookTitle = '';
+                this.fileHash = '';
+                this.chapters = [];
                 this.isInReadingView = false;
                 this.welcomeScreen.classList.remove('hidden');
                 this.rsvpDisplay.classList.add('hidden');
                 this.contextView.classList.add('hidden');
                 this.controlsOverlay.classList.add('hidden');
-                this.wpmSliderContainer.classList.add('hidden');
+                this.chapterBar.classList.add('hidden');
                 this.wordCounter.textContent = '0 / 0';
                 localStorage.removeItem('rsvp-state');
                 this.checkForContinueReading();
+                
+                if (this.autoSaveIntervalId) {
+                    clearInterval(this.autoSaveIntervalId);
+                }
             }
+            
+            // ==================== PROGRESS ====================
             
             updateProgress() {
                 if (this.words.length === 0) return;
                 const percent = (this.currentIndex / this.words.length) * 100;
                 this.progressFill.style.width = percent + '%';
                 this.progressThumb.style.left = percent + '%';
+                
                 const wordsRead = this.currentIndex;
                 const wordsRemaining = this.words.length - this.currentIndex;
                 const minutesElapsed = wordsRead / this.wpm;
                 const minutesRemaining = wordsRemaining / this.wpm;
+                
                 this.timeElapsed.textContent = this.formatTime(minutesElapsed);
                 this.timeRemaining.textContent = '-' + this.formatTime(minutesRemaining);
             }
             
-            formatTime(minutes) {
-                const mins = Math.floor(minutes);
-                const secs = Math.floor((minutes - mins) * 60);
-                return mins + ':' + secs.toString().padStart(2, '0');
-            }
+            // ==================== WPM ====================
             
             handleWPMChange(e) {
                 this.wpm = parseInt(e.target.value);
                 this.wpmValue.textContent = this.wpm;
                 if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
+                
                 if (this.isPlaying) {
-                    this.pause();
-                    this.showRSVPView();
-                    this.play();
+                    // Restart playback with new WPM
+                    if (this.playTimeoutId) {
+                        clearTimeout(this.playTimeoutId);
+                    }
+                    this.scheduleNextWord();
                 }
+                
                 this.updateProgress();
                 this.saveState();
             }
@@ -984,11 +1328,14 @@
                 if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = newWPM;
                 this.showWPMFeedback();
                 setTimeout(() => this.hideWPMFeedback(), 1000);
+                
                 if (this.isPlaying) {
-                    this.pause();
-                    this.showRSVPView();
-                    this.play();
+                    if (this.playTimeoutId) {
+                        clearTimeout(this.playTimeoutId);
+                    }
+                    this.scheduleNextWord();
                 }
+                
                 this.updateProgress();
                 this.saveState();
             }
@@ -998,11 +1345,15 @@
             showSettings() { this.settingsModal.classList.remove('hidden'); }
             hideSettings() { this.settingsModal.classList.add('hidden'); }
             
+            // ==================== SETTINGS ====================
+            
             setFontSize(size) {
                 this.fontSize = size;
                 document.querySelectorAll('.font-size-btn').forEach(btn => {
-                    btn.classList.toggle('bg-blue-600', btn.dataset.size === size);
-                    btn.classList.toggle('bg-slate-700', btn.dataset.size !== size);
+                    btn.classList.toggle('bg-zinc-600', btn.dataset.size === size);
+                    btn.classList.toggle('border-zinc-500/50', btn.dataset.size === size);
+                    btn.classList.toggle('bg-zinc-700/50', btn.dataset.size !== size);
+                    btn.classList.toggle('border-zinc-600/30', btn.dataset.size !== size);
                 });
                 this.currentWord.className = 'rsvp-word ' + size + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
                 this.saveState();
@@ -1011,22 +1362,29 @@
             setChunkSize(size) {
                 this.chunkSize = size;
                 document.querySelectorAll('.chunk-btn').forEach(btn => {
-                    btn.classList.toggle('bg-blue-600', parseInt(btn.dataset.chunk) === size);
-                    btn.classList.toggle('bg-slate-700', parseInt(btn.dataset.chunk) !== size);
+                    btn.classList.toggle('bg-zinc-600', parseInt(btn.dataset.chunk) === size);
+                    btn.classList.toggle('border-zinc-500/50', parseInt(btn.dataset.chunk) === size);
+                    btn.classList.toggle('bg-zinc-700/50', parseInt(btn.dataset.chunk) !== size);
+                    btn.classList.toggle('border-zinc-600/30', parseInt(btn.dataset.chunk) !== size);
                 });
                 if (this.words.length > 0) this.displayCurrentWord();
                 this.saveState();
             }
             
+            // ==================== PERSISTENCE ====================
+            
             saveState() {
                 try {
                     const state = {
                         words: this.words,
+                        wordMeta: this.wordMeta,
+                        chapters: this.chapters,
                         currentIndex: this.currentIndex,
                         wpm: this.wpm,
                         chunkSize: this.chunkSize,
                         fontSize: this.fontSize,
                         bookTitle: this.bookTitle,
+                        fileHash: this.fileHash,
                         savedAt: Date.now()
                     };
                     localStorage.setItem('rsvp-state', JSON.stringify(state));
@@ -1038,6 +1396,7 @@
                             chunkSize: this.chunkSize,
                             fontSize: this.fontSize,
                             bookTitle: this.bookTitle,
+                            fileHash: this.fileHash,
                             wordCount: this.words.length,
                             savedAt: Date.now()
                         };
@@ -1055,33 +1414,47 @@
                         const state = JSON.parse(saved);
                         if (state.words && state.words.length > 0) {
                             this.words = state.words;
+                            this.wordMeta = state.wordMeta || [];
+                            this.chapters = state.chapters || [];
                             this.currentIndex = state.currentIndex || 0;
                             this.wpm = state.wpm || 300;
                             this.chunkSize = state.chunkSize || 1;
                             this.fontSize = state.fontSize || 'word-size-lg';
                             this.bookTitle = state.bookTitle || 'Sin título';
+                            this.fileHash = state.fileHash || '';
                             
                             this.wpmSlider.value = this.wpm;
                             this.wpmValue.textContent = this.wpm;
                             if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
                             
+                            this.populateChapterSelect();
+                            
                             document.querySelectorAll('.font-size-btn').forEach(btn => {
-                                btn.classList.toggle('bg-blue-600', btn.dataset.size === this.fontSize);
-                                btn.classList.toggle('bg-slate-700', btn.dataset.size !== this.fontSize);
+                                btn.classList.toggle('bg-zinc-600', btn.dataset.size === this.fontSize);
+                                btn.classList.toggle('border-zinc-500/50', btn.dataset.size === this.fontSize);
+                                btn.classList.toggle('bg-zinc-700/50', btn.dataset.size !== this.fontSize);
+                                btn.classList.toggle('border-zinc-600/30', btn.dataset.size !== this.fontSize);
                             });
                             
                             document.querySelectorAll('.chunk-btn').forEach(btn => {
-                                btn.classList.toggle('bg-blue-600', parseInt(btn.dataset.chunk) === this.chunkSize);
-                                btn.classList.toggle('bg-slate-700', parseInt(btn.dataset.chunk) !== this.chunkSize);
+                                btn.classList.toggle('bg-zinc-600', parseInt(btn.dataset.chunk) === this.chunkSize);
+                                btn.classList.toggle('border-zinc-500/50', parseInt(btn.dataset.chunk) === this.chunkSize);
+                                btn.classList.toggle('bg-zinc-700/50', parseInt(btn.dataset.chunk) !== this.chunkSize);
+                                btn.classList.toggle('border-zinc-600/30', parseInt(btn.dataset.chunk) !== this.chunkSize);
                             });
                             
                             this.currentWord.className = 'rsvp-word ' + this.fontSize + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
+                            
+                            // Start auto-save if we have content
+                            this.startAutoSave();
                         }
                     } catch (e) {
                         console.error('Error loading saved state:', e);
                     }
                 }
             }
+            
+            // ==================== SERVICE WORKER ====================
             
             async registerSW() {
                 if ('serviceWorker' in navigator) {
