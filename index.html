@@ -25,14 +25,14 @@
         
         .rsvp-word {
             font-family: 'Literata', Georgia, serif;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         
-        /* Pivot letter styling */
         .pivot-left { }
         .pivot-center { color: #ef4444; }
         .pivot-right { }
         
-        /* Custom range slider vertical */
         .wpm-slider {
             -webkit-appearance: none;
             appearance: none;
@@ -66,7 +66,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
-        /* Progress bar */
         .progress-track {
             height: 6px;
             background: rgba(255,255,255,0.15);
@@ -98,7 +97,6 @@
             transform: translate(-50%, -50%) scale(1.2);
         }
         
-        /* Context view */
         .context-view {
             font-family: 'Literata', Georgia, serif;
             line-height: 1.8;
@@ -112,7 +110,22 @@
             font-weight: 600;
         }
         
-        /* Animations */
+        .reading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            max-width: 90vw;
+            max-height: 50vh;
+            overflow: hidden;
+            padding: 1rem;
+        }
+        
+        .word-size-sm { font-size: clamp(1.5rem, 5vw, 2rem); }
+        .word-size-md { font-size: clamp(2rem, 7vw, 3rem); }
+        .word-size-lg { font-size: clamp(2.5rem, 9vw, 4rem); }
+        .word-size-xl { font-size: clamp(3rem, 11vw, 5rem); }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -123,35 +136,37 @@
             50% { opacity: 0.5; }
         }
         
-        .animate-fade-in {
-            animation: fadeIn 0.2s ease-out;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .animate-pulse-slow {
-            animation: pulse 2s ease-in-out infinite;
-        }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
         
-        /* Hide scrollbar but allow scroll */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .home-btn:hover { background: rgba(255,255,255,0.1); }
+        
+        .continue-btn {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
         }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .continue-btn:hover {
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
         }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen overflow-hidden">
     
-    <!-- Main App Container -->
     <div id="app" class="h-screen flex flex-col">
         
-        <!-- Header -->
-        <header class="flex items-center justify-between px-4 py-3 bg-slate-800/50 backdrop-blur-sm z-10">
-            <div class="flex items-center gap-3">
+        <header class="flex items-center justify-between px-4 py-3 bg-slate-800/50 backdrop-blur-sm z-10 flex-shrink-0">
+            <button id="homeBtn" class="home-btn flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer">
                 <span class="text-2xl">📖</span>
                 <h1 class="text-lg font-semibold">RSVP Reader</h1>
-            </div>
+            </button>
             <div class="flex items-center gap-2">
                 <span id="wordCounter" class="text-sm text-slate-400">0 / 0</span>
                 <button id="settingsBtn" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
@@ -163,14 +178,30 @@
             </div>
         </header>
         
-        <!-- Main Reading Area -->
-        <main id="readingArea" class="flex-1 flex items-center justify-center relative px-4">
+        <main id="readingArea" class="flex-1 flex items-center justify-center relative px-4 overflow-hidden">
             
-            <!-- Welcome Screen -->
-            <div id="welcomeScreen" class="text-center max-w-md mx-auto">
+            <div id="welcomeScreen" class="text-center max-w-md mx-auto w-full">
                 <div class="text-6xl mb-6">📚</div>
                 <h2 class="text-2xl font-bold mb-4">Lectura Rápida RSVP</h2>
                 <p class="text-slate-400 mb-8">Carga un archivo de texto (.txt) o pega tu texto para comenzar a leer a alta velocidad.</p>
+                
+                <div id="continueReadingContainer" class="hidden mb-6 animate-slide-up">
+                    <button id="continueReadingBtn" class="continue-btn w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl transition-all font-semibold text-left flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs text-blue-200 uppercase tracking-wide mb-1">Continuar Lectura</div>
+                            <div id="savedBookTitle" class="font-bold truncate">Título del libro</div>
+                            <div id="savedBookProgress" class="text-sm text-blue-200">50% completado</div>
+                        </div>
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
                 
                 <div class="space-y-4">
                     <label class="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer transition-colors font-semibold">
@@ -186,26 +217,32 @@
                         O prueba con un texto de ejemplo →
                     </button>
                 </div>
+                
+                <div class="mt-8 pt-6 border-t border-slate-700">
+                    <a href="https://convertio.co/es/pdf-epub/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v6h6"/>
+                        </svg>
+                        ¿Tienes un PDF? Conviértelo a EPUB aquí
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
             
-            <!-- RSVP Display (Single Word Mode) -->
-            <div id="rsvpDisplay" class="hidden w-full max-w-3xl text-center">
-                <!-- Pivot guide lines -->
-                <div class="relative">
+            <div id="rsvpDisplay" class="hidden w-full flex flex-col items-center justify-center">
+                <div class="relative reading-container">
                     <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -top-6"></div>
                     <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -bottom-6"></div>
+                    <div id="currentWord" class="rsvp-word word-size-lg font-medium tracking-wide flex items-center justify-center whitespace-nowrap">
+                        <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
+                    </div>
                 </div>
-                
-                <!-- Current Word -->
-                <div id="currentWord" class="rsvp-word text-5xl md:text-7xl font-medium tracking-wide min-h-[1.5em] flex items-center justify-center">
-                    <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
-                </div>
-                
-                <!-- Tap to pause hint -->
                 <p id="tapHint" class="text-slate-500 text-sm mt-8 animate-pulse-slow">Toca para pausar</p>
             </div>
             
-            <!-- Context View (Pause Mode) -->
             <div id="contextView" class="hidden w-full max-w-2xl mx-auto px-4">
                 <div class="bg-slate-800/80 backdrop-blur rounded-2xl p-6 max-h-[60vh] overflow-y-auto scrollbar-hide">
                     <div class="flex items-center justify-between mb-4">
@@ -220,7 +257,6 @@
                 <p class="text-center text-slate-500 text-sm mt-4">Toca ▶ para continuar leyendo</p>
             </div>
             
-            <!-- WPM Slider (Right Edge) -->
             <div id="wpmSliderContainer" class="hidden absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center py-8 pr-2">
                 <span class="text-xs text-slate-500 mb-2 rotate-90 origin-center whitespace-nowrap">Rápido</span>
                 <div class="h-48 flex items-center justify-center">
@@ -229,7 +265,6 @@
                 <span class="text-xs text-slate-500 mt-2 rotate-90 origin-center whitespace-nowrap">Lento</span>
             </div>
             
-            <!-- WPM Feedback -->
             <div id="wpmFeedback" class="hidden absolute top-4 right-4 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg">
                 <span class="text-2xl font-bold text-blue-400" id="wpmValue">300</span>
                 <span class="text-sm text-slate-400 ml-1">WPM</span>
@@ -237,10 +272,8 @@
             
         </main>
         
-        <!-- Bottom Controls Overlay -->
-        <div id="controlsOverlay" class="hidden bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-8 pb-6 px-4">
+        <div id="controlsOverlay" class="hidden bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-8 pb-6 px-4 flex-shrink-0">
             
-            <!-- Progress Bar (Scrubber) -->
             <div id="progressContainer" class="mb-6 px-2">
                 <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
                     <span id="timeElapsed">0:00</span>
@@ -252,15 +285,12 @@
                 </div>
             </div>
             
-            <!-- Main Controls -->
             <div class="flex items-center justify-center gap-4">
-                <!-- Skip Back 10s -->
                 <button id="skipBackBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
                     <span class="text-xl">⏪</span>
                     <span class="text-[10px] text-slate-400">-10s</span>
                 </button>
                 
-                <!-- Play/Pause -->
                 <button id="playPauseBtn" class="flex items-center justify-center w-20 h-20 bg-blue-600 hover:bg-blue-700 rounded-full transition-all active:scale-95 shadow-lg shadow-blue-600/30">
                     <svg id="playIcon" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
@@ -270,14 +300,12 @@
                     </svg>
                 </button>
                 
-                <!-- Skip Forward 10s -->
                 <button id="skipForwardBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
                     <span class="text-xl">⏩</span>
                     <span class="text-[10px] text-slate-400">+10s</span>
                 </button>
             </div>
             
-            <!-- Secondary Controls -->
             <div class="flex items-center justify-center gap-8 mt-4">
                 <button id="restartBtn" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,7 +324,6 @@
         
     </div>
     
-    <!-- Paste Text Modal -->
     <div id="pasteModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-slate-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in">
             <div class="flex items-center justify-between p-4 border-b border-slate-700">
@@ -308,7 +335,8 @@
                 </button>
             </div>
             <div class="p-4 flex-1 overflow-hidden">
-                <textarea id="pasteTextArea" class="w-full h-64 bg-slate-900 rounded-xl p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pega aquí el texto que deseas leer..."></textarea>
+                <input type="text" id="bookTitleInput" class="w-full bg-slate-900 rounded-xl p-3 text-white mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Título del libro (opcional)">
+                <textarea id="pasteTextArea" class="w-full h-56 bg-slate-900 rounded-xl p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pega aquí el texto que deseas leer..."></textarea>
             </div>
             <div class="p-4 border-t border-slate-700">
                 <button id="startReadingBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition-colors">
@@ -318,7 +346,6 @@
         </div>
     </div>
     
-    <!-- Settings Modal -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-slate-800 rounded-2xl w-full max-w-md animate-fade-in">
             <div class="flex items-center justify-between p-4 border-b border-slate-700">
@@ -330,18 +357,16 @@
                 </button>
             </div>
             <div class="p-4 space-y-6">
-                <!-- Font Size -->
                 <div>
                     <label class="text-sm text-slate-400 block mb-2">Tamaño de Fuente</label>
                     <div class="flex items-center gap-4">
-                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg" data-size="text-4xl">A</button>
-                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg text-lg" data-size="text-5xl">A</button>
-                        <button class="font-size-btn px-4 py-2 bg-blue-600 rounded-lg text-xl" data-size="text-6xl">A</button>
-                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg text-2xl" data-size="text-7xl">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-sm" data-size="word-size-sm">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-base" data-size="word-size-md">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-blue-600 rounded-lg text-lg" data-size="word-size-lg">A</button>
+                        <button class="font-size-btn flex-1 py-3 bg-slate-700 rounded-lg text-xl" data-size="word-size-xl">A</button>
                     </div>
                 </div>
                 
-                <!-- Theme -->
                 <div>
                     <label class="text-sm text-slate-400 block mb-2">Tema</label>
                     <div class="flex items-center gap-4">
@@ -350,7 +375,6 @@
                     </div>
                 </div>
                 
-                <!-- Chunk Mode -->
                 <div>
                     <label class="text-sm text-slate-400 block mb-2">Palabras por Flash</label>
                     <div class="flex items-center gap-4">
@@ -364,13 +388,8 @@
     </div>
 
     <script>
-        // ============================================
-        // RSVP Reader - Main Application
-        // ============================================
-        
         class RSVPReader {
             constructor() {
-                // State
                 this.words = [];
                 this.currentIndex = 0;
                 this.isPlaying = false;
@@ -378,30 +397,32 @@
                 this.chunkSize = 1;
                 this.intervalId = null;
                 this.isDraggingProgress = false;
+                this.bookTitle = '';
+                this.isInReadingView = false;
                 
-                // Settings
-                this.fontSize = 'text-5xl md:text-7xl';
+                this.fontSize = 'word-size-lg';
                 this.contextBefore = 50;
                 this.contextAfter = 20;
                 this.skipSeconds = 10;
                 
-                // DOM Elements
                 this.cacheElements();
                 this.bindEvents();
                 this.loadSavedState();
-                
-                // Register Service Worker
+                this.checkForContinueReading();
                 this.registerSW();
             }
             
             cacheElements() {
-                // Screens
                 this.welcomeScreen = document.getElementById('welcomeScreen');
                 this.rsvpDisplay = document.getElementById('rsvpDisplay');
                 this.contextView = document.getElementById('contextView');
                 this.controlsOverlay = document.getElementById('controlsOverlay');
                 
-                // Controls
+                this.continueReadingContainer = document.getElementById('continueReadingContainer');
+                this.continueReadingBtn = document.getElementById('continueReadingBtn');
+                this.savedBookTitle = document.getElementById('savedBookTitle');
+                this.savedBookProgress = document.getElementById('savedBookProgress');
+                
                 this.playPauseBtn = document.getElementById('playPauseBtn');
                 this.playIcon = document.getElementById('playIcon');
                 this.pauseIcon = document.getElementById('pauseIcon');
@@ -409,32 +430,29 @@
                 this.skipForwardBtn = document.getElementById('skipForwardBtn');
                 this.restartBtn = document.getElementById('restartBtn');
                 this.newTextBtn = document.getElementById('newTextBtn');
+                this.homeBtn = document.getElementById('homeBtn');
                 
-                // Progress
                 this.progressTrack = document.getElementById('progressTrack');
                 this.progressFill = document.getElementById('progressFill');
                 this.progressThumb = document.getElementById('progressThumb');
                 this.timeElapsed = document.getElementById('timeElapsed');
                 this.timeRemaining = document.getElementById('timeRemaining');
                 
-                // WPM
                 this.wpmSlider = document.getElementById('wpmSlider');
                 this.wpmSliderContainer = document.getElementById('wpmSliderContainer');
                 this.wpmFeedback = document.getElementById('wpmFeedback');
                 this.wpmValue = document.getElementById('wpmValue');
                 
-                // Display
                 this.currentWord = document.getElementById('currentWord');
                 this.contextText = document.getElementById('contextText');
                 this.wordCounter = document.getElementById('wordCounter');
                 this.tapHint = document.getElementById('tapHint');
                 
-                // Modals
                 this.pasteModal = document.getElementById('pasteModal');
                 this.settingsModal = document.getElementById('settingsModal');
                 this.pasteTextArea = document.getElementById('pasteTextArea');
+                this.bookTitleInput = document.getElementById('bookTitleInput');
                 
-                // Buttons
                 this.fileInput = document.getElementById('fileInput');
                 this.pasteTextBtn = document.getElementById('pasteTextBtn');
                 this.loadSampleBtn = document.getElementById('loadSampleBtn');
@@ -445,55 +463,48 @@
             }
             
             bindEvents() {
-                // File loading
+                this.homeBtn.addEventListener('click', () => this.goHome());
+                this.continueReadingBtn.addEventListener('click', () => this.continueReading());
+                
                 this.fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
                 this.pasteTextBtn.addEventListener('click', () => this.showPasteModal());
                 this.loadSampleBtn.addEventListener('click', () => this.loadSampleText());
                 this.startReadingBtn.addEventListener('click', () => this.startFromPaste());
                 this.closePasteModal.addEventListener('click', () => this.hidePasteModal());
                 
-                // Playback controls
                 this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
                 this.skipBackBtn.addEventListener('click', () => this.skip(-this.skipSeconds));
                 this.skipForwardBtn.addEventListener('click', () => this.skip(this.skipSeconds));
                 this.restartBtn.addEventListener('click', () => this.restart());
-                this.newTextBtn.addEventListener('click', () => this.reset());
+                this.newTextBtn.addEventListener('click', () => this.goHomeAndReset());
                 
-                // Tap to pause (on reading area)
                 document.getElementById('readingArea').addEventListener('click', (e) => {
                     if (this.isPlaying && !e.target.closest('button') && !e.target.closest('input')) {
                         this.pause();
                     }
                 });
                 
-                // WPM Slider
                 this.wpmSlider.addEventListener('input', (e) => this.handleWPMChange(e));
                 this.wpmSlider.addEventListener('touchstart', () => this.showWPMFeedback());
                 this.wpmSlider.addEventListener('touchend', () => this.hideWPMFeedback());
                 this.wpmSlider.addEventListener('mousedown', () => this.showWPMFeedback());
                 this.wpmSlider.addEventListener('mouseup', () => this.hideWPMFeedback());
                 
-                // Progress bar (scrubber)
                 this.setupProgressScrubber();
                 
-                // Settings
                 this.settingsBtn.addEventListener('click', () => this.showSettings());
                 this.closeSettingsModal.addEventListener('click', () => this.hideSettings());
                 
-                // Font size buttons
                 document.querySelectorAll('.font-size-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => this.setFontSize(e.target.dataset.size));
                 });
                 
-                // Chunk buttons
                 document.querySelectorAll('.chunk-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => this.setChunkSize(parseInt(e.target.dataset.chunk)));
                 });
                 
-                // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => this.handleKeyboard(e));
                 
-                // Close modals on backdrop click
                 this.pasteModal.addEventListener('click', (e) => {
                     if (e.target === this.pasteModal) this.hidePasteModal();
                 });
@@ -505,11 +516,9 @@
             setupProgressScrubber() {
                 const handleMove = (clientX) => {
                     if (!this.isDraggingProgress) return;
-                    
                     const rect = this.progressTrack.getBoundingClientRect();
                     let percent = (clientX - rect.left) / rect.width;
                     percent = Math.max(0, Math.min(1, percent));
-                    
                     this.currentIndex = Math.floor(percent * this.words.length);
                     this.updateProgress();
                     this.displayCurrentWord();
@@ -520,7 +529,6 @@
                     const wasPlaying = this.isPlaying;
                     if (wasPlaying) this.pause();
                     this.progressThumb.dataset.wasPlaying = wasPlaying;
-                    
                     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                     handleMove(clientX);
                 };
@@ -528,63 +536,99 @@
                 const endDrag = () => {
                     if (!this.isDraggingProgress) return;
                     this.isDraggingProgress = false;
-                    
                     if (this.progressThumb.dataset.wasPlaying === 'true') {
                         this.play();
                     }
                 };
                 
-                // Mouse events
                 this.progressTrack.addEventListener('mousedown', startDrag);
                 document.addEventListener('mousemove', (e) => handleMove(e.clientX));
                 document.addEventListener('mouseup', endDrag);
                 
-                // Touch events
                 this.progressTrack.addEventListener('touchstart', startDrag, { passive: true });
                 document.addEventListener('touchmove', (e) => {
-                    if (this.isDraggingProgress) {
-                        handleMove(e.touches[0].clientX);
-                    }
+                    if (this.isDraggingProgress) handleMove(e.touches[0].clientX);
                 }, { passive: true });
                 document.addEventListener('touchend', endDrag);
             }
             
             handleKeyboard(e) {
-                if (e.target.tagName === 'TEXTAREA') return;
+                if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
                 
                 switch(e.code) {
                     case 'Space':
                         e.preventDefault();
-                        this.togglePlayPause();
+                        if (this.isInReadingView) this.togglePlayPause();
                         break;
                     case 'ArrowLeft':
-                        this.skip(-this.skipSeconds);
+                        if (this.isInReadingView) this.skip(-this.skipSeconds);
                         break;
                     case 'ArrowRight':
-                        this.skip(this.skipSeconds);
+                        if (this.isInReadingView) this.skip(this.skipSeconds);
                         break;
                     case 'ArrowUp':
-                        this.adjustWPM(50);
+                        if (this.isInReadingView) this.adjustWPM(50);
                         break;
                     case 'ArrowDown':
-                        this.adjustWPM(-50);
+                        if (this.isInReadingView) this.adjustWPM(-50);
+                        break;
+                    case 'Escape':
+                        if (this.isInReadingView) this.goHome();
                         break;
                 }
             }
             
-            // ============================================
-            // Text Loading
-            // ============================================
+            goHome() {
+                this.pause();
+                this.isInReadingView = false;
+                this.rsvpDisplay.classList.add('hidden');
+                this.contextView.classList.add('hidden');
+                this.controlsOverlay.classList.add('hidden');
+                this.wpmSliderContainer.classList.add('hidden');
+                this.welcomeScreen.classList.remove('hidden');
+                this.checkForContinueReading();
+                this.saveState();
+            }
+            
+            goHomeAndReset() {
+                this.pause();
+                this.isInReadingView = false;
+                this.rsvpDisplay.classList.add('hidden');
+                this.contextView.classList.add('hidden');
+                this.controlsOverlay.classList.add('hidden');
+                this.wpmSliderContainer.classList.add('hidden');
+                this.welcomeScreen.classList.remove('hidden');
+                this.checkForContinueReading();
+            }
+            
+            continueReading() {
+                if (this.words.length > 0) {
+                    this.showReadingUI();
+                    this.displayCurrentWord();
+                    this.updateProgress();
+                    this.showContextView();
+                }
+            }
+            
+            checkForContinueReading() {
+                if (this.words.length > 0 && this.bookTitle) {
+                    const progress = Math.round((this.currentIndex / this.words.length) * 100);
+                    this.savedBookTitle.textContent = this.bookTitle;
+                    this.savedBookProgress.textContent = progress + '% completado • ' + this.words.length + ' palabras';
+                    this.continueReadingContainer.classList.remove('hidden');
+                } else {
+                    this.continueReadingContainer.classList.add('hidden');
+                }
+            }
             
             handleFileLoad(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                
+                this.bookTitle = file.name.replace(/\.[^/.]+$/, '');
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    this.loadText(event.target.result);
-                };
+                reader.onload = (event) => this.loadText(event.target.result);
                 reader.readAsText(file);
+                e.target.value = '';
             }
             
             showPasteModal() {
@@ -599,49 +643,33 @@
             startFromPaste() {
                 const text = this.pasteTextArea.value.trim();
                 if (text) {
+                    this.bookTitle = this.bookTitleInput.value.trim() || 'Texto pegado';
                     this.loadText(text);
                     this.hidePasteModal();
+                    this.pasteTextArea.value = '';
+                    this.bookTitleInput.value = '';
                 }
             }
             
             loadSampleText() {
-                const sampleText = `La lectura rápida es una habilidad que te permite absorber información a velocidades increíbles. Con la técnica RSVP (Rapid Serial Visual Presentation), las palabras se muestran una a una en el centro de tu visión, eliminando los movimientos oculares innecesarios y aumentando dramáticamente tu velocidad de lectura.
-
-El cerebro humano es capaz de procesar información visual mucho más rápido de lo que normalmente leemos. Cuando leemos de forma tradicional, perdemos tiempo valioso moviendo los ojos de izquierda a derecha y saltando de línea en línea. RSVP elimina estas ineficiencias.
-
-Esta aplicación te permite practicar y mejorar tu velocidad de lectura gradualmente. Comienza con velocidades más bajas, alrededor de 200-300 palabras por minuto, y ve aumentando progresivamente mientras te sientes cómodo. Muchas personas logran leer cómodamente a 500 o incluso 700 palabras por minuto con práctica regular.
-
-Algunos consejos para mejorar: mantén tu mente enfocada, evita subvocalizar (pronunciar las palabras mentalmente), y practica regularmente. La concentración es clave para la lectura rápida.
-
-La exacción del conocimiento a través de la lectura es un proceso transformador. Cada libro, cada artículo, cada texto que consumimos nos enriquece y expande nuestra comprensión del mundo. La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infinitas posibilidades.
-
-¡Feliz lectura rápida!`;
-                
+                this.bookTitle = 'Texto de Ejemplo - RSVP';
+                const sampleText = 'La lectura rápida es una habilidad que te permite absorber información a velocidades increíbles. Con la técnica RSVP (Rapid Serial Visual Presentation), las palabras se muestran una a una en el centro de tu visión, eliminando los movimientos oculares innecesarios y aumentando dramáticamente tu velocidad de lectura. El cerebro humano es capaz de procesar información visual mucho más rápido de lo que normalmente leemos. Cuando leemos de forma tradicional, perdemos tiempo valioso moviendo los ojos de izquierda a derecha y saltando de línea en línea. RSVP elimina estas ineficiencias. Esta aplicación te permite practicar y mejorar tu velocidad de lectura gradualmente. Comienza con velocidades más bajas, alrededor de 200-300 palabras por minuto, y ve aumentando progresivamente mientras te sientes cómodo. Muchas personas logran leer cómodamente a 500 o incluso 700 palabras por minuto con práctica regular. Algunos consejos para mejorar: mantén tu mente enfocada, evita subvocalizar (pronunciar las palabras mentalmente), y practica regularmente. La concentración es clave para la lectura rápida. La exacción del conocimiento a través de la lectura es un proceso transformador. Cada libro, cada artículo, cada texto que consumimos nos enriquece y expande nuestra comprensión del mundo. La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infinitas posibilidades. ¡Feliz lectura rápida!';
                 this.loadText(sampleText);
             }
             
             loadText(text) {
-                // Clean and split text into words
-                this.words = text
-                    .replace(/\s+/g, ' ')
-                    .trim()
-                    .split(' ')
-                    .filter(word => word.length > 0);
-                
+                this.words = text.replace(/\s+/g, ' ').trim().split(' ').filter(word => word.length > 0);
                 if (this.words.length === 0) return;
-                
                 this.currentIndex = 0;
+                this.isInReadingView = true;
                 this.showReadingUI();
                 this.displayCurrentWord();
                 this.updateProgress();
                 this.saveState();
             }
             
-            // ============================================
-            // UI Management
-            // ============================================
-            
             showReadingUI() {
+                this.isInReadingView = true;
                 this.welcomeScreen.classList.add('hidden');
                 this.rsvpDisplay.classList.remove('hidden');
                 this.controlsOverlay.classList.remove('hidden');
@@ -662,22 +690,16 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
             renderContextText() {
                 const startIdx = Math.max(0, this.currentIndex - this.contextBefore);
                 const endIdx = Math.min(this.words.length, this.currentIndex + this.contextAfter + 1);
-                
                 let html = '';
                 for (let i = startIdx; i < endIdx; i++) {
                     if (i === this.currentIndex) {
-                        html += `<span class="context-current-word">${this.words[i]}</span> `;
+                        html += '<span class="context-current-word">' + this.words[i] + '</span> ';
                     } else {
-                        html += `${this.words[i]} `;
+                        html += this.words[i] + ' ';
                     }
                 }
-                
                 this.contextText.innerHTML = html;
             }
-            
-            // ============================================
-            // Word Display with Pivot
-            // ============================================
             
             displayCurrentWord() {
                 if (this.currentIndex >= this.words.length) {
@@ -686,22 +708,16 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                     return;
                 }
                 
-                // Get chunk of words
-                const chunk = this.words
-                    .slice(this.currentIndex, this.currentIndex + this.chunkSize)
-                    .join(' ');
+                // FIXED: Use proper spacing with join(" ")
+                const chunkWords = this.words.slice(this.currentIndex, this.currentIndex + this.chunkSize);
+                const chunk = chunkWords.join(" ");
                 
-                // Calculate pivot point (ORP - Optimal Recognition Point)
                 const pivotIndex = this.calculatePivot(chunk);
-                
                 const left = chunk.substring(0, pivotIndex);
                 const center = chunk.charAt(pivotIndex);
                 const right = chunk.substring(pivotIndex + 1);
                 
-                this.currentWord.innerHTML = `
-                    <span class="pivot-left">${left}</span><span class="pivot-center">${center}</span><span class="pivot-right">${right}</span>
-                `;
-                
+                this.currentWord.innerHTML = '<span class="pivot-left">' + left + '</span><span class="pivot-center">' + center + '</span><span class="pivot-right">' + right + '</span>';
                 this.updateWordCounter();
             }
             
@@ -714,47 +730,31 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
             }
             
             updateWordCounter() {
-                this.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+                this.wordCounter.textContent = (this.currentIndex + 1) + ' / ' + this.words.length;
             }
-            
-            // ============================================
-            // Playback Controls
-            // ============================================
             
             togglePlayPause() {
                 if (this.words.length === 0) return;
-                
-                if (this.isPlaying) {
-                    this.pause();
-                } else {
-                    this.play();
-                }
+                if (this.isPlaying) this.pause();
+                else this.play();
             }
             
             play() {
-                if (this.currentIndex >= this.words.length) {
-                    this.currentIndex = 0;
-                }
-                
+                if (this.currentIndex >= this.words.length) this.currentIndex = 0;
                 this.isPlaying = true;
                 this.playIcon.classList.add('hidden');
                 this.pauseIcon.classList.remove('hidden');
                 this.tapHint.classList.remove('hidden');
-                
-                // Switch to RSVP view
                 this.showRSVPView();
                 
                 const interval = (60 / this.wpm) * 1000;
-                
                 this.intervalId = setInterval(() => {
                     this.currentIndex += this.chunkSize;
-                    
                     if (this.currentIndex >= this.words.length) {
                         this.pause();
                         this.currentWord.innerHTML = '<span class="text-green-400">¡Fin!</span>';
                         return;
                     }
-                    
                     this.displayCurrentWord();
                     this.updateProgress();
                     this.saveState();
@@ -766,33 +766,24 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                 this.playIcon.classList.remove('hidden');
                 this.pauseIcon.classList.add('hidden');
                 this.tapHint.classList.add('hidden');
-                
                 if (this.intervalId) {
                     clearInterval(this.intervalId);
                     this.intervalId = null;
                 }
-                
-                // Switch to Context View
                 if (this.words.length > 0 && this.currentIndex < this.words.length) {
                     this.showContextView();
                 }
             }
             
             skip(seconds) {
-                // Calculate words to skip based on WPM
-                // WPM = words per minute, so words per second = WPM / 60
                 const wordsPerSecond = this.wpm / 60;
                 const wordsToSkip = Math.round(wordsPerSecond * seconds);
-                
                 this.currentIndex = Math.max(0, Math.min(this.words.length - 1, this.currentIndex + wordsToSkip));
                 this.displayCurrentWord();
                 this.updateProgress();
-                
-                // Update context view if paused
-                if (!this.isPlaying && this.contextView.classList.contains('hidden') === false) {
+                if (!this.isPlaying && !this.contextView.classList.contains('hidden')) {
                     this.renderContextText();
                 }
-                
                 this.saveState();
             }
             
@@ -800,11 +791,7 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                 this.currentIndex = 0;
                 this.displayCurrentWord();
                 this.updateProgress();
-                
-                if (!this.isPlaying) {
-                    this.showContextView();
-                }
-                
+                if (!this.isPlaying) this.showContextView();
                 this.saveState();
             }
             
@@ -812,60 +799,45 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                 this.pause();
                 this.words = [];
                 this.currentIndex = 0;
-                
+                this.bookTitle = '';
+                this.isInReadingView = false;
                 this.welcomeScreen.classList.remove('hidden');
                 this.rsvpDisplay.classList.add('hidden');
                 this.contextView.classList.add('hidden');
                 this.controlsOverlay.classList.add('hidden');
                 this.wpmSliderContainer.classList.add('hidden');
-                
                 this.wordCounter.textContent = '0 / 0';
                 localStorage.removeItem('rsvp-state');
+                this.checkForContinueReading();
             }
-            
-            // ============================================
-            // Progress Bar
-            // ============================================
             
             updateProgress() {
                 if (this.words.length === 0) return;
-                
                 const percent = (this.currentIndex / this.words.length) * 100;
-                this.progressFill.style.width = `${percent}%`;
-                this.progressThumb.style.left = `${percent}%`;
-                
-                // Calculate time
+                this.progressFill.style.width = percent + '%';
+                this.progressThumb.style.left = percent + '%';
                 const wordsRead = this.currentIndex;
                 const wordsRemaining = this.words.length - this.currentIndex;
-                
                 const minutesElapsed = wordsRead / this.wpm;
                 const minutesRemaining = wordsRemaining / this.wpm;
-                
                 this.timeElapsed.textContent = this.formatTime(minutesElapsed);
-                this.timeRemaining.textContent = `-${this.formatTime(minutesRemaining)}`;
+                this.timeRemaining.textContent = '-' + this.formatTime(minutesRemaining);
             }
             
             formatTime(minutes) {
                 const mins = Math.floor(minutes);
                 const secs = Math.floor((minutes - mins) * 60);
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
+                return mins + ':' + secs.toString().padStart(2, '0');
             }
-            
-            // ============================================
-            // WPM Control
-            // ============================================
             
             handleWPMChange(e) {
                 this.wpm = parseInt(e.target.value);
                 this.wpmValue.textContent = this.wpm;
-                
-                // Restart playback with new WPM if playing
                 if (this.isPlaying) {
                     this.pause();
                     this.showRSVPView();
                     this.play();
                 }
-                
                 this.updateProgress();
                 this.saveState();
             }
@@ -875,39 +847,21 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                 this.wpm = newWPM;
                 this.wpmSlider.value = newWPM;
                 this.wpmValue.textContent = newWPM;
-                
                 this.showWPMFeedback();
                 setTimeout(() => this.hideWPMFeedback(), 1000);
-                
                 if (this.isPlaying) {
                     this.pause();
                     this.showRSVPView();
                     this.play();
                 }
-                
                 this.updateProgress();
                 this.saveState();
             }
             
-            showWPMFeedback() {
-                this.wpmFeedback.classList.remove('hidden');
-            }
-            
-            hideWPMFeedback() {
-                this.wpmFeedback.classList.add('hidden');
-            }
-            
-            // ============================================
-            // Settings
-            // ============================================
-            
-            showSettings() {
-                this.settingsModal.classList.remove('hidden');
-            }
-            
-            hideSettings() {
-                this.settingsModal.classList.add('hidden');
-            }
+            showWPMFeedback() { this.wpmFeedback.classList.remove('hidden'); }
+            hideWPMFeedback() { this.wpmFeedback.classList.add('hidden'); }
+            showSettings() { this.settingsModal.classList.remove('hidden'); }
+            hideSettings() { this.settingsModal.classList.add('hidden'); }
             
             setFontSize(size) {
                 this.fontSize = size;
@@ -915,9 +869,7 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                     btn.classList.toggle('bg-blue-600', btn.dataset.size === size);
                     btn.classList.toggle('bg-slate-700', btn.dataset.size !== size);
                 });
-                
-                // Apply new size
-                this.currentWord.className = `rsvp-word ${size} font-medium tracking-wide min-h-[1.5em] flex items-center justify-center`;
+                this.currentWord.className = 'rsvp-word ' + size + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
                 this.saveState();
             }
             
@@ -927,22 +879,38 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                     btn.classList.toggle('bg-blue-600', parseInt(btn.dataset.chunk) === size);
                     btn.classList.toggle('bg-slate-700', parseInt(btn.dataset.chunk) !== size);
                 });
+                if (this.words.length > 0) this.displayCurrentWord();
                 this.saveState();
             }
             
-            // ============================================
-            // State Persistence
-            // ============================================
-            
             saveState() {
-                const state = {
-                    words: this.words,
-                    currentIndex: this.currentIndex,
-                    wpm: this.wpm,
-                    chunkSize: this.chunkSize,
-                    fontSize: this.fontSize
-                };
-                localStorage.setItem('rsvp-state', JSON.stringify(state));
+                try {
+                    const state = {
+                        words: this.words,
+                        currentIndex: this.currentIndex,
+                        wpm: this.wpm,
+                        chunkSize: this.chunkSize,
+                        fontSize: this.fontSize,
+                        bookTitle: this.bookTitle,
+                        savedAt: Date.now()
+                    };
+                    localStorage.setItem('rsvp-state', JSON.stringify(state));
+                } catch (e) {
+                    try {
+                        const minState = {
+                            currentIndex: this.currentIndex,
+                            wpm: this.wpm,
+                            chunkSize: this.chunkSize,
+                            fontSize: this.fontSize,
+                            bookTitle: this.bookTitle,
+                            wordCount: this.words.length,
+                            savedAt: Date.now()
+                        };
+                        localStorage.setItem('rsvp-state-min', JSON.stringify(minState));
+                    } catch (e2) {
+                        console.error('Could not save state:', e2);
+                    }
+                }
             }
             
             loadSavedState() {
@@ -955,25 +923,29 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
                             this.currentIndex = state.currentIndex || 0;
                             this.wpm = state.wpm || 300;
                             this.chunkSize = state.chunkSize || 1;
-                            this.fontSize = state.fontSize || 'text-5xl md:text-7xl';
+                            this.fontSize = state.fontSize || 'word-size-lg';
+                            this.bookTitle = state.bookTitle || 'Sin título';
                             
                             this.wpmSlider.value = this.wpm;
                             this.wpmValue.textContent = this.wpm;
                             
-                            this.showReadingUI();
-                            this.showContextView();
-                            this.updateProgress();
-                            this.updateWordCounter();
+                            document.querySelectorAll('.font-size-btn').forEach(btn => {
+                                btn.classList.toggle('bg-blue-600', btn.dataset.size === this.fontSize);
+                                btn.classList.toggle('bg-slate-700', btn.dataset.size !== this.fontSize);
+                            });
+                            
+                            document.querySelectorAll('.chunk-btn').forEach(btn => {
+                                btn.classList.toggle('bg-blue-600', parseInt(btn.dataset.chunk) === this.chunkSize);
+                                btn.classList.toggle('bg-slate-700', parseInt(btn.dataset.chunk) !== this.chunkSize);
+                            });
+                            
+                            this.currentWord.className = 'rsvp-word ' + this.fontSize + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
                         }
                     } catch (e) {
                         console.error('Error loading saved state:', e);
                     }
                 }
             }
-            
-            // ============================================
-            // Service Worker
-            // ============================================
             
             async registerSW() {
                 if ('serviceWorker' in navigator) {
@@ -987,7 +959,6 @@ La exacción del conocimiento a través de la lectura es un proceso transformado
             }
         }
         
-        // Initialize app
         const app = new RSVPReader();
     </script>
 </body>
