@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>RSVP Reader</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f172a' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>📖</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Literata:wght@400;500&display=swap');
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        
+        .rsvp-word {
+            font-family: 'Literata', Georgia, serif;
+        }
+        
+        /* Pivot letter styling */
+        .pivot-left { }
+        .pivot-center { color: #ef4444; }
+        .pivot-right { }
+        
+        /* Custom range slider vertical */
+        .wpm-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            outline: none;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+        }
+        
+        .wpm-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .wpm-slider::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        /* Progress bar */
+        .progress-track {
+            height: 6px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 3px;
+            transition: width 0.1s ease-out;
+        }
+        
+        .progress-thumb {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            cursor: grab;
+        }
+        
+        .progress-thumb:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        
+        /* Context view */
+        .context-view {
+            font-family: 'Literata', Georgia, serif;
+            line-height: 1.8;
+        }
+        
+        .context-current-word {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Hide scrollbar but allow scroll */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen overflow-hidden">
+    
+    <!-- Main App Container -->
+    <div id="app" class="h-screen flex flex-col">
+        
+        <!-- Header -->
+        <header class="flex items-center justify-between px-4 py-3 bg-slate-800/50 backdrop-blur-sm z-10">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">📖</span>
+                <h1 class="text-lg font-semibold">RSVP Reader</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="wordCounter" class="text-sm text-slate-400">0 / 0</span>
+                <button id="settingsBtn" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Reading Area -->
+        <main id="readingArea" class="flex-1 flex items-center justify-center relative px-4">
+            
+            <!-- Welcome Screen -->
+            <div id="welcomeScreen" class="text-center max-w-md mx-auto">
+                <div class="text-6xl mb-6">📚</div>
+                <h2 class="text-2xl font-bold mb-4">Lectura Rápida RSVP</h2>
+                <p class="text-slate-400 mb-8">Carga un archivo de texto (.txt) o pega tu texto para comenzar a leer a alta velocidad.</p>
+                
+                <div class="space-y-4">
+                    <label class="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer transition-colors font-semibold">
+                        <input type="file" id="fileInput" accept=".txt,.epub" class="hidden">
+                        📁 Cargar Archivo .txt
+                    </label>
+                    
+                    <button id="pasteTextBtn" class="w-full py-4 px-6 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
+                        📋 Pegar Texto
+                    </button>
+                    
+                    <button id="loadSampleBtn" class="w-full py-3 px-6 text-slate-400 hover:text-white transition-colors text-sm">
+                        O prueba con un texto de ejemplo →
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RSVP Display (Single Word Mode) -->
+            <div id="rsvpDisplay" class="hidden w-full max-w-3xl text-center">
+                <!-- Pivot guide lines -->
+                <div class="relative">
+                    <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -top-6"></div>
+                    <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-4 bg-red-500/50 -bottom-6"></div>
+                </div>
+                
+                <!-- Current Word -->
+                <div id="currentWord" class="rsvp-word text-5xl md:text-7xl font-medium tracking-wide min-h-[1.5em] flex items-center justify-center">
+                    <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
+                </div>
+                
+                <!-- Tap to pause hint -->
+                <p id="tapHint" class="text-slate-500 text-sm mt-8 animate-pulse-slow">Toca para pausar</p>
+            </div>
+            
+            <!-- Context View (Pause Mode) -->
+            <div id="contextView" class="hidden w-full max-w-2xl mx-auto px-4">
+                <div class="bg-slate-800/80 backdrop-blur rounded-2xl p-6 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm text-slate-400 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                            Modo Contexto (PAUSADO)
+                        </span>
+                        <span class="text-xs text-slate-500">50 palabras antes • 20 después</span>
+                    </div>
+                    <p id="contextText" class="context-view text-xl text-slate-200 leading-relaxed"></p>
+                </div>
+                <p class="text-center text-slate-500 text-sm mt-4">Toca ▶ para continuar leyendo</p>
+            </div>
+            
+            <!-- WPM Slider (Right Edge) -->
+            <div id="wpmSliderContainer" class="hidden absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center py-8 pr-2">
+                <span class="text-xs text-slate-500 mb-2 rotate-90 origin-center whitespace-nowrap">Rápido</span>
+                <div class="h-48 flex items-center justify-center">
+                    <input type="range" id="wpmSlider" class="wpm-slider" min="100" max="800" value="300" step="10">
+                </div>
+                <span class="text-xs text-slate-500 mt-2 rotate-90 origin-center whitespace-nowrap">Lento</span>
+            </div>
+            
+            <!-- WPM Feedback -->
+            <div id="wpmFeedback" class="hidden absolute top-4 right-4 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-blue-400" id="wpmValue">300</span>
+                <span class="text-sm text-slate-400 ml-1">WPM</span>
+            </div>
+            
+        </main>
+        
+        <!-- Bottom Controls Overlay -->
+        <div id="controlsOverlay" class="hidden bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-8 pb-6 px-4">
+            
+            <!-- Progress Bar (Scrubber) -->
+            <div id="progressContainer" class="mb-6 px-2">
+                <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                    <span id="timeElapsed">0:00</span>
+                    <span id="timeRemaining">-0:00</span>
+                </div>
+                <div class="progress-track relative" id="progressTrack">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    <div class="progress-thumb" id="progressThumb" style="left: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Main Controls -->
+            <div class="flex items-center justify-center gap-4">
+                <!-- Skip Back 10s -->
+                <button id="skipBackBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
+                    <span class="text-xl">⏪</span>
+                    <span class="text-[10px] text-slate-400">-10s</span>
+                </button>
+                
+                <!-- Play/Pause -->
+                <button id="playPauseBtn" class="flex items-center justify-center w-20 h-20 bg-blue-600 hover:bg-blue-700 rounded-full transition-all active:scale-95 shadow-lg shadow-blue-600/30">
+                    <svg id="playIcon" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg id="pauseIcon" class="w-10 h-10 hidden" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                    </svg>
+                </button>
+                
+                <!-- Skip Forward 10s -->
+                <button id="skipForwardBtn" class="flex flex-col items-center justify-center w-16 h-16 bg-slate-800 hover:bg-slate-700 rounded-full transition-all active:scale-95">
+                    <span class="text-xl">⏩</span>
+                    <span class="text-[10px] text-slate-400">+10s</span>
+                </button>
+            </div>
+            
+            <!-- Secondary Controls -->
+            <div class="flex items-center justify-center gap-8 mt-4">
+                <button id="restartBtn" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Reiniciar
+                </button>
+                <button id="newTextBtn" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Nuevo Texto
+                </button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Paste Text Modal -->
+    <div id="pasteModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in">
+            <div class="flex items-center justify-between p-4 border-b border-slate-700">
+                <h3 class="text-lg font-semibold">Pegar Texto</h3>
+                <button id="closePasteModal" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4 flex-1 overflow-hidden">
+                <textarea id="pasteTextArea" class="w-full h-64 bg-slate-900 rounded-xl p-4 text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pega aquí el texto que deseas leer..."></textarea>
+            </div>
+            <div class="p-4 border-t border-slate-700">
+                <button id="startReadingBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition-colors">
+                    Comenzar Lectura
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-2xl w-full max-w-md animate-fade-in">
+            <div class="flex items-center justify-between p-4 border-b border-slate-700">
+                <h3 class="text-lg font-semibold">Configuración</h3>
+                <button id="closeSettingsModal" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4 space-y-6">
+                <!-- Font Size -->
+                <div>
+                    <label class="text-sm text-slate-400 block mb-2">Tamaño de Fuente</label>
+                    <div class="flex items-center gap-4">
+                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg" data-size="text-4xl">A</button>
+                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg text-lg" data-size="text-5xl">A</button>
+                        <button class="font-size-btn px-4 py-2 bg-blue-600 rounded-lg text-xl" data-size="text-6xl">A</button>
+                        <button class="font-size-btn px-4 py-2 bg-slate-700 rounded-lg text-2xl" data-size="text-7xl">A</button>
+                    </div>
+                </div>
+                
+                <!-- Theme -->
+                <div>
+                    <label class="text-sm text-slate-400 block mb-2">Tema</label>
+                    <div class="flex items-center gap-4">
+                        <button id="themeDark" class="flex-1 py-3 bg-slate-900 border-2 border-blue-500 rounded-xl text-sm">🌙 Oscuro</button>
+                        <button id="themeLight" class="flex-1 py-3 bg-slate-700 border-2 border-transparent rounded-xl text-sm">☀️ Claro</button>
+                    </div>
+                </div>
+                
+                <!-- Chunk Mode -->
+                <div>
+                    <label class="text-sm text-slate-400 block mb-2">Palabras por Flash</label>
+                    <div class="flex items-center gap-4">
+                        <button class="chunk-btn flex-1 py-2 bg-blue-600 rounded-lg text-sm" data-chunk="1">1</button>
+                        <button class="chunk-btn flex-1 py-2 bg-slate-700 rounded-lg text-sm" data-chunk="2">2</button>
+                        <button class="chunk-btn flex-1 py-2 bg-slate-700 rounded-lg text-sm" data-chunk="3">3</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // RSVP Reader - Main Application
+        // ============================================
+        
+        class RSVPReader {
+            constructor() {
+                // State
+                this.words = [];
+                this.currentIndex = 0;
+                this.isPlaying = false;
+                this.wpm = 300;
+                this.chunkSize = 1;
+                this.intervalId = null;
+                this.isDraggingProgress = false;
+                
+                // Settings
+                this.fontSize = 'text-5xl md:text-7xl';
+                this.contextBefore = 50;
+                this.contextAfter = 20;
+                this.skipSeconds = 10;
+                
+                // DOM Elements
+                this.cacheElements();
+                this.bindEvents();
+                this.loadSavedState();
+                
+                // Register Service Worker
+                this.registerSW();
+            }
+            
+            cacheElements() {
+                // Screens
+                this.welcomeScreen = document.getElementById('welcomeScreen');
+                this.rsvpDisplay = document.getElementById('rsvpDisplay');
+                this.contextView = document.getElementById('contextView');
+                this.controlsOverlay = document.getElementById('controlsOverlay');
+                
+                // Controls
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.playIcon = document.getElementById('playIcon');
+                this.pauseIcon = document.getElementById('pauseIcon');
+                this.skipBackBtn = document.getElementById('skipBackBtn');
+                this.skipForwardBtn = document.getElementById('skipForwardBtn');
+                this.restartBtn = document.getElementById('restartBtn');
+                this.newTextBtn = document.getElementById('newTextBtn');
+                
+                // Progress
+                this.progressTrack = document.getElementById('progressTrack');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressThumb = document.getElementById('progressThumb');
+                this.timeElapsed = document.getElementById('timeElapsed');
+                this.timeRemaining = document.getElementById('timeRemaining');
+                
+                // WPM
+                this.wpmSlider = document.getElementById('wpmSlider');
+                this.wpmSliderContainer = document.getElementById('wpmSliderContainer');
+                this.wpmFeedback = document.getElementById('wpmFeedback');
+                this.wpmValue = document.getElementById('wpmValue');
+                
+                // Display
+                this.currentWord = document.getElementById('currentWord');
+                this.contextText = document.getElementById('contextText');
+                this.wordCounter = document.getElementById('wordCounter');
+                this.tapHint = document.getElementById('tapHint');
+                
+                // Modals
+                this.pasteModal = document.getElementById('pasteModal');
+                this.settingsModal = document.getElementById('settingsModal');
+                this.pasteTextArea = document.getElementById('pasteTextArea');
+                
+                // Buttons
+                this.fileInput = document.getElementById('fileInput');
+                this.pasteTextBtn = document.getElementById('pasteTextBtn');
+                this.loadSampleBtn = document.getElementById('loadSampleBtn');
+                this.startReadingBtn = document.getElementById('startReadingBtn');
+                this.closePasteModal = document.getElementById('closePasteModal');
+                this.settingsBtn = document.getElementById('settingsBtn');
+                this.closeSettingsModal = document.getElementById('closeSettingsModal');
+            }
+            
+            bindEvents() {
+                // File loading
+                this.fileInput.addEventListener('change', (e) => this.handleFileLoad(e));
+                this.pasteTextBtn.addEventListener('click', () => this.showPasteModal());
+                this.loadSampleBtn.addEventListener('click', () => this.loadSampleText());
+                this.startReadingBtn.addEventListener('click', () => this.startFromPaste());
+                this.closePasteModal.addEventListener('click', () => this.hidePasteModal());
+                
+                // Playback controls
+                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                this.skipBackBtn.addEventListener('click', () => this.skip(-this.skipSeconds));
+                this.skipForwardBtn.addEventListener('click', () => this.skip(this.skipSeconds));
+                this.restartBtn.addEventListener('click', () => this.restart());
+                this.newTextBtn.addEventListener('click', () => this.reset());
+                
+                // Tap to pause (on reading area)
+                document.getElementById('readingArea').addEventListener('click', (e) => {
+                    if (this.isPlaying && !e.target.closest('button') && !e.target.closest('input')) {
+                        this.pause();
+                    }
+                });
+                
+                // WPM Slider
+                this.wpmSlider.addEventListener('input', (e) => this.handleWPMChange(e));
+                this.wpmSlider.addEventListener('touchstart', () => this.showWPMFeedback());
+                this.wpmSlider.addEventListener('touchend', () => this.hideWPMFeedback());
+                this.wpmSlider.addEventListener('mousedown', () => this.showWPMFeedback());
+                this.wpmSlider.addEventListener('mouseup', () => this.hideWPMFeedback());
+                
+                // Progress bar (scrubber)
+                this.setupProgressScrubber();
+                
+                // Settings
+                this.settingsBtn.addEventListener('click', () => this.showSettings());
+                this.closeSettingsModal.addEventListener('click', () => this.hideSettings());
+                
+                // Font size buttons
+                document.querySelectorAll('.font-size-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setFontSize(e.target.dataset.size));
+                });
+                
+                // Chunk buttons
+                document.querySelectorAll('.chunk-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setChunkSize(parseInt(e.target.dataset.chunk)));
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                // Close modals on backdrop click
+                this.pasteModal.addEventListener('click', (e) => {
+                    if (e.target === this.pasteModal) this.hidePasteModal();
+                });
+                this.settingsModal.addEventListener('click', (e) => {
+                    if (e.target === this.settingsModal) this.hideSettings();
+                });
+            }
+            
+            setupProgressScrubber() {
+                const handleMove = (clientX) => {
+                    if (!this.isDraggingProgress) return;
+                    
+                    const rect = this.progressTrack.getBoundingClientRect();
+                    let percent = (clientX - rect.left) / rect.width;
+                    percent = Math.max(0, Math.min(1, percent));
+                    
+                    this.currentIndex = Math.floor(percent * this.words.length);
+                    this.updateProgress();
+                    this.displayCurrentWord();
+                };
+                
+                const startDrag = (e) => {
+                    this.isDraggingProgress = true;
+                    const wasPlaying = this.isPlaying;
+                    if (wasPlaying) this.pause();
+                    this.progressThumb.dataset.wasPlaying = wasPlaying;
+                    
+                    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                    handleMove(clientX);
+                };
+                
+                const endDrag = () => {
+                    if (!this.isDraggingProgress) return;
+                    this.isDraggingProgress = false;
+                    
+                    if (this.progressThumb.dataset.wasPlaying === 'true') {
+                        this.play();
+                    }
+                };
+                
+                // Mouse events
+                this.progressTrack.addEventListener('mousedown', startDrag);
+                document.addEventListener('mousemove', (e) => handleMove(e.clientX));
+                document.addEventListener('mouseup', endDrag);
+                
+                // Touch events
+                this.progressTrack.addEventListener('touchstart', startDrag, { passive: true });
+                document.addEventListener('touchmove', (e) => {
+                    if (this.isDraggingProgress) {
+                        handleMove(e.touches[0].clientX);
+                    }
+                }, { passive: true });
+                document.addEventListener('touchend', endDrag);
+            }
+            
+            handleKeyboard(e) {
+                if (e.target.tagName === 'TEXTAREA') return;
+                
+                switch(e.code) {
+                    case 'Space':
+                        e.preventDefault();
+                        this.togglePlayPause();
+                        break;
+                    case 'ArrowLeft':
+                        this.skip(-this.skipSeconds);
+                        break;
+                    case 'ArrowRight':
+                        this.skip(this.skipSeconds);
+                        break;
+                    case 'ArrowUp':
+                        this.adjustWPM(50);
+                        break;
+                    case 'ArrowDown':
+                        this.adjustWPM(-50);
+                        break;
+                }
+            }
+            
+            // ============================================
+            // Text Loading
+            // ============================================
+            
+            handleFileLoad(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    this.loadText(event.target.result);
+                };
+                reader.readAsText(file);
+            }
+            
+            showPasteModal() {
+                this.pasteModal.classList.remove('hidden');
+                this.pasteTextArea.focus();
+            }
+            
+            hidePasteModal() {
+                this.pasteModal.classList.add('hidden');
+            }
+            
+            startFromPaste() {
+                const text = this.pasteTextArea.value.trim();
+                if (text) {
+                    this.loadText(text);
+                    this.hidePasteModal();
+                }
+            }
+            
+            loadSampleText() {
+                const sampleText = `La lectura rápida es una habilidad que te permite absorber información a velocidades increíbles. Con la técnica RSVP (Rapid Serial Visual Presentation), las palabras se muestran una a una en el centro de tu visión, eliminando los movimientos oculares innecesarios y aumentando dramáticamente tu velocidad de lectura.
+
+El cerebro humano es capaz de procesar información visual mucho más rápido de lo que normalmente leemos. Cuando leemos de forma tradicional, perdemos tiempo valioso moviendo los ojos de izquierda a derecha y saltando de línea en línea. RSVP elimina estas ineficiencias.
+
+Esta aplicación te permite practicar y mejorar tu velocidad de lectura gradualmente. Comienza con velocidades más bajas, alrededor de 200-300 palabras por minuto, y ve aumentando progresivamente mientras te sientes cómodo. Muchas personas logran leer cómodamente a 500 o incluso 700 palabras por minuto con práctica regular.
+
+Algunos consejos para mejorar: mantén tu mente enfocada, evita subvocalizar (pronunciar las palabras mentalmente), y practica regularmente. La concentración es clave para la lectura rápida.
+
+La exacción del conocimiento a través de la lectura es un proceso transformador. Cada libro, cada artículo, cada texto que consumimos nos enriquece y expande nuestra comprensión del mundo. La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infinitas posibilidades.
+
+¡Feliz lectura rápida!`;
+                
+                this.loadText(sampleText);
+            }
+            
+            loadText(text) {
+                // Clean and split text into words
+                this.words = text
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .split(' ')
+                    .filter(word => word.length > 0);
+                
+                if (this.words.length === 0) return;
+                
+                this.currentIndex = 0;
+                this.showReadingUI();
+                this.displayCurrentWord();
+                this.updateProgress();
+                this.saveState();
+            }
+            
+            // ============================================
+            // UI Management
+            // ============================================
+            
+            showReadingUI() {
+                this.welcomeScreen.classList.add('hidden');
+                this.rsvpDisplay.classList.remove('hidden');
+                this.controlsOverlay.classList.remove('hidden');
+                this.wpmSliderContainer.classList.remove('hidden');
+            }
+            
+            showRSVPView() {
+                this.rsvpDisplay.classList.remove('hidden');
+                this.contextView.classList.add('hidden');
+            }
+            
+            showContextView() {
+                this.rsvpDisplay.classList.add('hidden');
+                this.contextView.classList.remove('hidden');
+                this.renderContextText();
+            }
+            
+            renderContextText() {
+                const startIdx = Math.max(0, this.currentIndex - this.contextBefore);
+                const endIdx = Math.min(this.words.length, this.currentIndex + this.contextAfter + 1);
+                
+                let html = '';
+                for (let i = startIdx; i < endIdx; i++) {
+                    if (i === this.currentIndex) {
+                        html += `<span class="context-current-word">${this.words[i]}</span> `;
+                    } else {
+                        html += `${this.words[i]} `;
+                    }
+                }
+                
+                this.contextText.innerHTML = html;
+            }
+            
+            // ============================================
+            // Word Display with Pivot
+            // ============================================
+            
+            displayCurrentWord() {
+                if (this.currentIndex >= this.words.length) {
+                    this.pause();
+                    this.currentWord.innerHTML = '<span class="text-green-400">¡Fin!</span>';
+                    return;
+                }
+                
+                // Get chunk of words
+                const chunk = this.words
+                    .slice(this.currentIndex, this.currentIndex + this.chunkSize)
+                    .join(' ');
+                
+                // Calculate pivot point (ORP - Optimal Recognition Point)
+                const pivotIndex = this.calculatePivot(chunk);
+                
+                const left = chunk.substring(0, pivotIndex);
+                const center = chunk.charAt(pivotIndex);
+                const right = chunk.substring(pivotIndex + 1);
+                
+                this.currentWord.innerHTML = `
+                    <span class="pivot-left">${left}</span><span class="pivot-center">${center}</span><span class="pivot-right">${right}</span>
+                `;
+                
+                this.updateWordCounter();
+            }
+            
+            calculatePivot(word) {
+                const len = word.length;
+                if (len <= 1) return 0;
+                if (len <= 5) return Math.floor(len / 2) - 1;
+                if (len <= 9) return Math.floor(len / 2) - 1;
+                return Math.floor(len / 2) - 2;
+            }
+            
+            updateWordCounter() {
+                this.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+            }
+            
+            // ============================================
+            // Playback Controls
+            // ============================================
+            
+            togglePlayPause() {
+                if (this.words.length === 0) return;
+                
+                if (this.isPlaying) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+            
+            play() {
+                if (this.currentIndex >= this.words.length) {
+                    this.currentIndex = 0;
+                }
+                
+                this.isPlaying = true;
+                this.playIcon.classList.add('hidden');
+                this.pauseIcon.classList.remove('hidden');
+                this.tapHint.classList.remove('hidden');
+                
+                // Switch to RSVP view
+                this.showRSVPView();
+                
+                const interval = (60 / this.wpm) * 1000;
+                
+                this.intervalId = setInterval(() => {
+                    this.currentIndex += this.chunkSize;
+                    
+                    if (this.currentIndex >= this.words.length) {
+                        this.pause();
+                        this.currentWord.innerHTML = '<span class="text-green-400">¡Fin!</span>';
+                        return;
+                    }
+                    
+                    this.displayCurrentWord();
+                    this.updateProgress();
+                    this.saveState();
+                }, interval);
+            }
+            
+            pause() {
+                this.isPlaying = false;
+                this.playIcon.classList.remove('hidden');
+                this.pauseIcon.classList.add('hidden');
+                this.tapHint.classList.add('hidden');
+                
+                if (this.intervalId) {
+                    clearInterval(this.intervalId);
+                    this.intervalId = null;
+                }
+                
+                // Switch to Context View
+                if (this.words.length > 0 && this.currentIndex < this.words.length) {
+                    this.showContextView();
+                }
+            }
+            
+            skip(seconds) {
+                // Calculate words to skip based on WPM
+                // WPM = words per minute, so words per second = WPM / 60
+                const wordsPerSecond = this.wpm / 60;
+                const wordsToSkip = Math.round(wordsPerSecond * seconds);
+                
+                this.currentIndex = Math.max(0, Math.min(this.words.length - 1, this.currentIndex + wordsToSkip));
+                this.displayCurrentWord();
+                this.updateProgress();
+                
+                // Update context view if paused
+                if (!this.isPlaying && this.contextView.classList.contains('hidden') === false) {
+                    this.renderContextText();
+                }
+                
+                this.saveState();
+            }
+            
+            restart() {
+                this.currentIndex = 0;
+                this.displayCurrentWord();
+                this.updateProgress();
+                
+                if (!this.isPlaying) {
+                    this.showContextView();
+                }
+                
+                this.saveState();
+            }
+            
+            reset() {
+                this.pause();
+                this.words = [];
+                this.currentIndex = 0;
+                
+                this.welcomeScreen.classList.remove('hidden');
+                this.rsvpDisplay.classList.add('hidden');
+                this.contextView.classList.add('hidden');
+                this.controlsOverlay.classList.add('hidden');
+                this.wpmSliderContainer.classList.add('hidden');
+                
+                this.wordCounter.textContent = '0 / 0';
+                localStorage.removeItem('rsvp-state');
+            }
+            
+            // ============================================
+            // Progress Bar
+            // ============================================
+            
+            updateProgress() {
+                if (this.words.length === 0) return;
+                
+                const percent = (this.currentIndex / this.words.length) * 100;
+                this.progressFill.style.width = `${percent}%`;
+                this.progressThumb.style.left = `${percent}%`;
+                
+                // Calculate time
+                const wordsRead = this.currentIndex;
+                const wordsRemaining = this.words.length - this.currentIndex;
+                
+                const minutesElapsed = wordsRead / this.wpm;
+                const minutesRemaining = wordsRemaining / this.wpm;
+                
+                this.timeElapsed.textContent = this.formatTime(minutesElapsed);
+                this.timeRemaining.textContent = `-${this.formatTime(minutesRemaining)}`;
+            }
+            
+            formatTime(minutes) {
+                const mins = Math.floor(minutes);
+                const secs = Math.floor((minutes - mins) * 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // ============================================
+            // WPM Control
+            // ============================================
+            
+            handleWPMChange(e) {
+                this.wpm = parseInt(e.target.value);
+                this.wpmValue.textContent = this.wpm;
+                
+                // Restart playback with new WPM if playing
+                if (this.isPlaying) {
+                    this.pause();
+                    this.showRSVPView();
+                    this.play();
+                }
+                
+                this.updateProgress();
+                this.saveState();
+            }
+            
+            adjustWPM(delta) {
+                const newWPM = Math.max(100, Math.min(800, this.wpm + delta));
+                this.wpm = newWPM;
+                this.wpmSlider.value = newWPM;
+                this.wpmValue.textContent = newWPM;
+                
+                this.showWPMFeedback();
+                setTimeout(() => this.hideWPMFeedback(), 1000);
+                
+                if (this.isPlaying) {
+                    this.pause();
+                    this.showRSVPView();
+                    this.play();
+                }
+                
+                this.updateProgress();
+                this.saveState();
+            }
+            
+            showWPMFeedback() {
+                this.wpmFeedback.classList.remove('hidden');
+            }
+            
+            hideWPMFeedback() {
+                this.wpmFeedback.classList.add('hidden');
+            }
+            
+            // ============================================
+            // Settings
+            // ============================================
+            
+            showSettings() {
+                this.settingsModal.classList.remove('hidden');
+            }
+            
+            hideSettings() {
+                this.settingsModal.classList.add('hidden');
+            }
+            
+            setFontSize(size) {
+                this.fontSize = size;
+                document.querySelectorAll('.font-size-btn').forEach(btn => {
+                    btn.classList.toggle('bg-blue-600', btn.dataset.size === size);
+                    btn.classList.toggle('bg-slate-700', btn.dataset.size !== size);
+                });
+                
+                // Apply new size
+                this.currentWord.className = `rsvp-word ${size} font-medium tracking-wide min-h-[1.5em] flex items-center justify-center`;
+                this.saveState();
+            }
+            
+            setChunkSize(size) {
+                this.chunkSize = size;
+                document.querySelectorAll('.chunk-btn').forEach(btn => {
+                    btn.classList.toggle('bg-blue-600', parseInt(btn.dataset.chunk) === size);
+                    btn.classList.toggle('bg-slate-700', parseInt(btn.dataset.chunk) !== size);
+                });
+                this.saveState();
+            }
+            
+            // ============================================
+            // State Persistence
+            // ============================================
+            
+            saveState() {
+                const state = {
+                    words: this.words,
+                    currentIndex: this.currentIndex,
+                    wpm: this.wpm,
+                    chunkSize: this.chunkSize,
+                    fontSize: this.fontSize
+                };
+                localStorage.setItem('rsvp-state', JSON.stringify(state));
+            }
+            
+            loadSavedState() {
+                const saved = localStorage.getItem('rsvp-state');
+                if (saved) {
+                    try {
+                        const state = JSON.parse(saved);
+                        if (state.words && state.words.length > 0) {
+                            this.words = state.words;
+                            this.currentIndex = state.currentIndex || 0;
+                            this.wpm = state.wpm || 300;
+                            this.chunkSize = state.chunkSize || 1;
+                            this.fontSize = state.fontSize || 'text-5xl md:text-7xl';
+                            
+                            this.wpmSlider.value = this.wpm;
+                            this.wpmValue.textContent = this.wpm;
+                            
+                            this.showReadingUI();
+                            this.showContextView();
+                            this.updateProgress();
+                            this.updateWordCounter();
+                        }
+                    } catch (e) {
+                        console.error('Error loading saved state:', e);
+                    }
+                }
+            }
+            
+            // ============================================
+            // Service Worker
+            // ============================================
+            
+            async registerSW() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        await navigator.serviceWorker.register('sw.js');
+                        console.log('Service Worker registered');
+                    } catch (error) {
+                        console.log('SW registration failed:', error);
+                    }
+                }
+            }
+        }
+        
+        // Initialize app
+        const app = new RSVPReader();
+    </script>
+</body>
+</html>
