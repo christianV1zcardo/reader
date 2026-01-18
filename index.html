@@ -157,33 +157,60 @@
         .reading-container {
             position: relative;
             min-width: 320px;
-            height: 1.5em;
+            height: 3em;
             max-width: 90vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        
+        /* Guías visuales escalables */
+        .reading-container::before,
+        .reading-container::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0.08em;
+            height: 0.6em;
+            background: #52525b;
+            border-radius: 0.04em;
+        }
+        .reading-container::before { top: -0.8em; }
+        .reading-container::after { bottom: -0.8em; }
         
         .pivot-left {
             position: absolute;
-            right: 50%;
-            padding-right: 2px;
+            right: calc(50% + 0.85em);
+            top: 50%;
+            transform: translateY(-50%);
             text-align: right;
             white-space: nowrap;
-            color: #e4e4e7;
+            color: #a1a1aa;
+            line-height: 1;
+            letter-spacing: 0.02em;
         }
         
         .pivot-center {
             position: absolute;
             left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translate(-50%, -50%) scale(1.05);
             color: #ef4444;
+            z-index: 20;
+            line-height: 1;
         }
         
         .pivot-right {
             position: absolute;
-            left: 50%;
-            padding-left: 2px;
+            left: calc(50% + 0.85em);
+            top: 50%;
+            transform: translateY(-50%);
             text-align: left;
             white-space: nowrap;
-            color: #e4e4e7;
+            color: #a1a1aa;
+            line-height: 1;
+            letter-spacing: 0.02em;
         }
         
         .word-size-sm { font-size: clamp(1.5rem, 5vw, 2rem); }
@@ -338,16 +365,13 @@
             
             <!-- RSVP Display -->
             <div id="rsvpDisplay" class="hidden w-full flex flex-col items-center justify-center">
-                <div class="relative reading-container">
-                    <!-- Guías visuales del pivot -->
-                    <div class="absolute left-1/2 -translate-x-1/2 w-[2px] h-4 bg-zinc-700 -top-6 rounded-full"></div>
-                    <div class="absolute left-1/2 -translate-x-1/2 w-[2px] h-4 bg-zinc-700 -bottom-6 rounded-full"></div>
+                <div class="reading-container">
                     <!-- Palabra con pivot fijo -->
-                    <div id="currentWord" class="rsvp-word word-size-lg font-medium tracking-wide relative w-full h-full">
+                    <div id="currentWord" class="rsvp-word word-size-lg font-bold tracking-wide leading-none select-none absolute inset-0">
                         <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
                     </div>
                 </div>
-                <p id="tapHint" class="text-zinc-600 text-xs mt-10">Toca para pausar</p>
+                <p id="tapHint" class="text-zinc-600 text-xs mt-14">Toca para pausar</p>
             </div>
             
             <!-- Context View -->
