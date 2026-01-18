@@ -10,6 +10,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f172a' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>📖</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Literata:wght@400;500&display=swap');
         
@@ -36,34 +38,48 @@
         .wpm-slider {
             -webkit-appearance: none;
             appearance: none;
-            width: 200px;
-            height: 8px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 4px;
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 5px;
             outline: none;
-            transform: rotate(-90deg);
-            transform-origin: center center;
         }
         
         .wpm-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 28px;
-            height: 28px;
-            background: #3b82f6;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            border: 3px solid white;
+            transition: transform 0.15s ease;
+        }
+        
+        .wpm-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .wpm-slider::-webkit-slider-thumb:active {
+            transform: scale(0.95);
         }
         
         .wpm-slider::-moz-range-thumb {
-            width: 28px;
-            height: 28px;
-            background: #3b82f6;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             border-radius: 50%;
             cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .wpm-slider::-moz-range-track {
+            background: rgba(255,255,255,0.15);
+            border-radius: 5px;
+            height: 10px;
         }
         
         .progress-track {
@@ -206,7 +222,7 @@
                 <div class="space-y-4">
                     <label class="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer transition-colors font-semibold">
                         <input type="file" id="fileInput" accept=".txt,.epub" class="hidden">
-                        📁 Cargar Archivo .txt
+                        📁 Cargar Archivo (.txt / .epub)
                     </label>
                     
                     <button id="pasteTextBtn" class="w-full py-4 px-6 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
@@ -257,22 +273,32 @@
                 <p class="text-center text-slate-500 text-sm mt-4">Toca ▶ para continuar leyendo</p>
             </div>
             
-            <div id="wpmSliderContainer" class="hidden absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center py-8 pr-2">
-                <span class="text-xs text-slate-500 mb-2 rotate-90 origin-center whitespace-nowrap">Rápido</span>
-                <div class="h-48 flex items-center justify-center">
-                    <input type="range" id="wpmSlider" class="wpm-slider" min="100" max="800" value="300" step="10">
-                </div>
-                <span class="text-xs text-slate-500 mt-2 rotate-90 origin-center whitespace-nowrap">Lento</span>
-            </div>
+            <!-- WPM Slider movido al overlay de controles -->
             
             <div id="wpmFeedback" class="hidden absolute top-4 right-4 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg">
-                <span class="text-2xl font-bold text-blue-400" id="wpmValue">300</span>
+                <span class="text-2xl font-bold text-blue-400" id="wpmValueFeedback">300</span>
                 <span class="text-sm text-slate-400 ml-1">WPM</span>
             </div>
             
         </main>
         
         <div id="controlsOverlay" class="hidden bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent pt-8 pb-6 px-4 flex-shrink-0">
+            
+            <!-- WPM Slider Horizontal -->
+            <div id="wpmSliderContainer" class="hidden mb-6 px-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-slate-400">Velocidad</span>
+                    <div class="bg-slate-800/80 px-3 py-1 rounded-full">
+                        <span class="text-lg font-bold text-blue-400" id="wpmValue">300</span>
+                        <span class="text-xs text-slate-400 ml-1">WPM</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 w-12 text-left">Lento</span>
+                    <input type="range" id="wpmSlider" class="wpm-slider flex-1" min="100" max="800" value="300" step="10">
+                    <span class="text-xs text-slate-500 w-12 text-right">Rápido</span>
+                </div>
+            </div>
             
             <div id="progressContainer" class="mb-6 px-2">
                 <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
@@ -442,6 +468,7 @@
                 this.wpmSliderContainer = document.getElementById('wpmSliderContainer');
                 this.wpmFeedback = document.getElementById('wpmFeedback');
                 this.wpmValue = document.getElementById('wpmValue');
+                this.wpmValueFeedback = document.getElementById('wpmValueFeedback');
                 
                 this.currentWord = document.getElementById('currentWord');
                 this.contextText = document.getElementById('contextText');
@@ -621,14 +648,113 @@
                 }
             }
             
-            handleFileLoad(e) {
+            async handleFileLoad(e) {
                 const file = e.target.files[0];
                 if (!file) return;
+                
                 this.bookTitle = file.name.replace(/\.[^/.]+$/, '');
-                const reader = new FileReader();
-                reader.onload = (event) => this.loadText(event.target.result);
-                reader.readAsText(file);
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                if (extension === 'epub') {
+                    await this.processEpub(file);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (event) => this.loadText(event.target.result);
+                    reader.readAsText(file);
+                }
                 e.target.value = '';
+            }
+            
+            async processEpub(file) {
+                this.showProcessingMessage();
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const book = ePub(arrayBuffer);
+                    
+                    await book.ready;
+                    
+                    const spine = book.spine;
+                    let fullText = '';
+                    
+                    for (let i = 0; i < spine.length; i++) {
+                        const item = spine.get(i);
+                        if (item) {
+                            try {
+                                const doc = await item.load(book.load.bind(book));
+                                if (doc && doc.body) {
+                                    const chapterText = this.extractTextFromHTML(doc.body);
+                                    if (chapterText.trim()) {
+                                        fullText += chapterText + ' ';
+                                    }
+                                }
+                            } catch (chapterError) {
+                                console.warn('Error loading chapter ' + i + ':', chapterError);
+                            }
+                        }
+                        this.updateProcessingProgress(i + 1, spine.length);
+                    }
+                    
+                    this.hideProcessingMessage();
+                    
+                    if (fullText.trim()) {
+                        this.loadText(fullText);
+                    } else {
+                        alert('No se pudo extraer texto del archivo EPUB. Intenta con otro archivo.');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error processing EPUB:', error);
+                    this.hideProcessingMessage();
+                    alert('Error al procesar el archivo EPUB: ' + error.message);
+                }
+            }
+            
+            extractTextFromHTML(element) {
+                const clone = element.cloneNode(true);
+                const scripts = clone.querySelectorAll('script, style, noscript');
+                scripts.forEach(el => el.remove());
+                let text = clone.textContent || clone.innerText || '';
+                text = text.replace(/\s+/g, ' ').trim();
+                return text;
+            }
+            
+            showProcessingMessage() {
+                if (!document.getElementById('processingOverlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'processingOverlay';
+                    overlay.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                    overlay.innerHTML = `
+                        <div class="bg-slate-800 rounded-2xl p-8 text-center max-w-sm mx-4">
+                            <div class="text-5xl mb-4">📚</div>
+                            <h3 class="text-xl font-bold mb-2">Procesando EPUB...</h3>
+                            <p id="processingStatus" class="text-slate-400 text-sm mb-4">Cargando capítulos...</p>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div id="processingProgress" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+                }
+            }
+            
+            updateProcessingProgress(current, total) {
+                const progress = document.getElementById('processingProgress');
+                const status = document.getElementById('processingStatus');
+                if (progress) {
+                    const percent = Math.round((current / total) * 100);
+                    progress.style.width = percent + '%';
+                }
+                if (status) {
+                    status.textContent = 'Procesando capítulo ' + current + ' de ' + total + '...';
+                }
+            }
+            
+            hideProcessingMessage() {
+                const overlay = document.getElementById('processingOverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
             }
             
             showPasteModal() {
@@ -833,6 +959,7 @@
             handleWPMChange(e) {
                 this.wpm = parseInt(e.target.value);
                 this.wpmValue.textContent = this.wpm;
+                if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
                 if (this.isPlaying) {
                     this.pause();
                     this.showRSVPView();
@@ -847,6 +974,7 @@
                 this.wpm = newWPM;
                 this.wpmSlider.value = newWPM;
                 this.wpmValue.textContent = newWPM;
+                if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = newWPM;
                 this.showWPMFeedback();
                 setTimeout(() => this.hideWPMFeedback(), 1000);
                 if (this.isPlaying) {
@@ -928,6 +1056,7 @@
                             
                             this.wpmSlider.value = this.wpm;
                             this.wpmValue.textContent = this.wpm;
+                            if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
                             
                             document.querySelectorAll('.font-size-btn').forEach(btn => {
                                 btn.classList.toggle('bg-blue-600', btn.dataset.size === this.fontSize);
