@@ -160,57 +160,9 @@
             height: 3em;
             max-width: 90vw;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-        }
-        
-        /* Guías visuales escalables */
-        .reading-container::before,
-        .reading-container::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0.08em;
-            height: 0.6em;
-            background: #52525b;
-            border-radius: 0.04em;
-        }
-        .reading-container::before { top: -0.8em; }
-        .reading-container::after { bottom: -0.8em; }
-        
-        .pivot-left {
-            position: absolute;
-            right: calc(50% + 0.85em);
-            top: 50%;
-            transform: translateY(-50%);
-            text-align: right;
-            white-space: nowrap;
-            color: #a1a1aa;
-            line-height: 1;
-            letter-spacing: 0.02em;
-        }
-        
-        .pivot-center {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) scale(1.05);
-            color: #ef4444;
-            z-index: 20;
-            line-height: 1;
-        }
-        
-        .pivot-right {
-            position: absolute;
-            left: calc(50% + 0.85em);
-            top: 50%;
-            transform: translateY(-50%);
-            text-align: left;
-            white-space: nowrap;
-            color: #a1a1aa;
-            line-height: 1;
-            letter-spacing: 0.02em;
         }
         
         .word-size-sm { font-size: clamp(1.5rem, 5vw, 2rem); }
@@ -366,12 +318,11 @@
             <!-- RSVP Display -->
             <div id="rsvpDisplay" class="hidden w-full flex flex-col items-center justify-center">
                 <div class="reading-container">
-                    <!-- Palabra con pivot fijo -->
-                    <div id="currentWord" class="rsvp-word word-size-lg font-bold tracking-wide leading-none select-none absolute inset-0">
-                        <span class="pivot-left"></span><span class="pivot-center"></span><span class="pivot-right"></span>
+                    <div id="currentWord" class="rsvp-word word-size-lg select-none w-full h-full flex flex-col items-center justify-center font-bold leading-none">
+                        <!-- Contenido generado dinámicamente con ANCHOR STRATEGY -->
                     </div>
                 </div>
-                <p id="tapHint" class="text-zinc-600 text-xs mt-14">Toca para pausar</p>
+                <p id="tapHint" class="hidden"></p>
             </div>
             
             <!-- Context View -->
@@ -1238,19 +1189,40 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 const center = chunk.charAt(pivotIndex);
                 const right = chunk.substring(pivotIndex + 1);
                 
-                // Con posicionamiento absoluto, el pivote siempre está en el centro exacto
-                this.currentWord.innerHTML = 
-                    '<span class="pivot-left">' + left + '</span>' +
-                    '<span class="pivot-center">' + center + '</span>' +
-                    '<span class="pivot-right">' + right + '</span>';
+                // Contenedor flex-col global
+                this.currentWord.className = `rsvp-word select-none w-full h-full flex flex-col items-center justify-center`;
+                
+                // GUÍAS FIJAS + PALABRA: Las guías están FUERA del contexto de font-size
+                this.currentWord.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-bottom: 13px;"></div>
+                        
+                        <div class="relative flex items-center justify-center ${this.fontSize} font-bold leading-none">
+                            <div class="relative flex justify-center items-center text-red-500 z-20">
+                                <span>${center}</span>
+                                <span class="absolute right-full top-0 text-zinc-400 text-right whitespace-nowrap">${left}</span>
+                                <span class="absolute left-full top-0 text-zinc-400 text-left whitespace-nowrap">${right}</span>
+                            </div>
+                        </div>
+                        
+                        <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-top: 16px;"></div>
+                    </div>
+
+                    <div class="text-[11px] text-zinc-600 font-sans tracking-wider mt-4 opacity-50">
+                        Toca para pausar
+                    </div>
+                `;
                 this.updateWordCounter();
             }
             
             calculatePivot(word) {
                 const len = word.length;
                 if (len <= 1) return 0;
-                if (len <= 5) return Math.floor(len / 2) - 1;
+                if (len === 2) return 0;
+                if (len === 3) return 1; // Letra del medio para palabras de 3 letras
+                if (len <= 5) return 1;
                 if (len <= 9) return Math.floor(len / 2) - 1;
+                if (len <= 13) return Math.floor(len / 2) - 1;
                 return Math.floor(len / 2) - 2;
             }
             
