@@ -524,6 +524,7 @@
                 this.chunkSize = 1;
                 this.playTimeoutId = null;
                 this.autoSaveIntervalId = null;
+                this.uiIntervalId = null; // Bucle secundario para UI (progress bar, tiempo)
                 this.isDraggingProgress = false;
                 this.bookTitle = '';
                 this.fileHash = '';
@@ -666,9 +667,8 @@
                     let percent = (clientX - rect.left) / rect.width;
                     percent = Math.max(0, Math.min(1, percent));
                     this.currentIndex = Math.floor(percent * this.words.length);
-                    this.updateProgress();
                     this.displayCurrentWord();
-                    this.updateChapterInfo();
+                    this.updateUI(); // Usa el método unificado
                 }, 50); // 50ms throttle para scrubbing suave
                 
                 const startDrag = (e) => {
@@ -911,8 +911,7 @@
                 if (chapterIndex >= 0 && chapterIndex < this.chapters.length) {
                     this.currentIndex = this.chapters[chapterIndex].wordIndex;
                     this.displayCurrentWord();
-                    this.updateProgress();
-                    this.updateChapterInfo();
+                    this.updateUI(); // Usa el método unificado
                     if (!this.isPlaying) {
                         this.renderContextText();
                     }
@@ -1006,8 +1005,7 @@
                 if (this.words.length > 0) {
                     this.showReadingUI();
                     this.displayCurrentWord();
-                    this.updateProgress();
-                    this.updateChapterInfo();
+                    this.updateUI(); // Usa el método unificado
                     this.showContextView();
                 }
             }
@@ -1048,8 +1046,7 @@
                             if (savedPosition !== null && savedPosition > 0) {
                                 this.currentIndex = Math.min(savedPosition, this.words.length - 1);
                                 this.displayCurrentWord();
-                                this.updateProgress();
-                                this.updateChapterInfo();
+                                this.updateUI(); // Usa el método unificado
                                 this.showToast(`Restaurado en palabra ${this.formatNumber(this.currentIndex + 1)}`);
                             }
                         }, 16); // ~1 frame delay
@@ -1153,8 +1150,7 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.isInReadingView = true;
                 this.showReadingUI();
                 this.displayCurrentWord();
-                this.updateProgress();
-                this.updateChapterInfo();
+                this.updateUI(); // Usa el método unificado
                 this.saveState();
                 
                 // Start auto-save interval
@@ -1297,7 +1293,13 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.tapHint.classList.remove('hidden');
                 this.showRSVPView();
                 
+                // Bucle principal: solo texto (crítico, sin lag)
                 this.scheduleNextWord();
+                
+                // Bucle secundario: UI cada 500ms (no crítico)
+                if (this.uiIntervalId) clearInterval(this.uiIntervalId);
+                this.uiIntervalId = setInterval(() => this.updateUI(), 500);
+                this.updateUI(); // Actualización inicial
             }
             
             scheduleNextWord() {
@@ -1316,9 +1318,9 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                         return;
                     }
                     
+                    // OPTIMIZACIÓN: Solo texto en ruta crítica
+                    // UI se actualiza en bucle secundario (uiIntervalId)
                     this.displayCurrentWord();
-                    this.updateProgress();
-                    this.updateChapterInfo();
                     
                     // Schedule next word with its own delay
                     this.scheduleNextWord();
@@ -1336,6 +1338,15 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                     this.playTimeoutId = null;
                 }
                 
+                // Limpiar bucle secundario de UI
+                if (this.uiIntervalId) {
+                    clearInterval(this.uiIntervalId);
+                    this.uiIntervalId = null;
+                }
+                
+                // Actualización final de UI al pausar
+                this.updateUI();
+                
                 if (this.words.length > 0 && this.currentIndex < this.words.length) {
                     this.showContextView();
                 }
@@ -1350,8 +1361,7 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 const wordsToSkip = Math.round(wordsPerSecond * seconds);
                 this.currentIndex = Math.max(0, Math.min(this.words.length - 1, this.currentIndex + wordsToSkip));
                 this.displayCurrentWord();
-                this.updateProgress();
-                this.updateChapterInfo();
+                this.updateUI(); // Usa el método unificado
                 if (!this.isPlaying && !this.contextView.classList.contains('hidden')) {
                     this.renderContextText();
                 }
@@ -1361,8 +1371,7 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
             restart() {
                 this.currentIndex = 0;
                 this.displayCurrentWord();
-                this.updateProgress();
-                this.updateChapterInfo();
+                this.updateUI(); // Usa el método unificado
                 if (!this.isPlaying) this.showContextView();
                 this.saveState();
             }
@@ -1388,6 +1397,15 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 if (this.autoSaveIntervalId) {
                     clearInterval(this.autoSaveIntervalId);
                 }
+            }
+            
+            // ==================== UI UPDATE (BUCLE SECUNDARIO) ====================
+            
+            // Agrupa actualizaciones no críticas: progreso, tiempo, capítulos
+            // Se ejecuta en intervalo separado (500ms) para no bloquear texto
+            updateUI() {
+                this.updateProgress();
+                this.updateChapterInfo();
             }
             
             // ==================== PROGRESS ====================
