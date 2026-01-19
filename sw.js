@@ -2,13 +2,13 @@
 // RSVP Reader - Service Worker
 // ============================================
 
-const CACHE_NAME = 'rsvp-reader-v1';
+const CACHE_NAME = 'rsvp-reader-v2';
 const ASSETS = [
     '/',
     '/index.html',
     '/manifest.json',
     'https://cdn.tailwindcss.com',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Literata:wght@400;500&display=swap'
+    'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap'
 ];
 
 // Install event - cache assets

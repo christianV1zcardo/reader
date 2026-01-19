@@ -1526,12 +1526,13 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
             
             // ==================== PERSISTENCE ====================
             
+            // OPTIMIZACIÓN: Guardar rawText en lugar de arrays procesados
+            // Esto reduce dramáticamente el tamaño en localStorage para libros grandes
             saveState() {
                 try {
+                    // Solo guardar rawText + configuración (no arrays procesados)
                     const state = {
-                        words: this.words,
-                        wordMeta: this.wordMeta,
-                        chapters: this.chapters,
+                        rawText: this.rawText,
                         currentIndex: this.currentIndex,
                         wpm: this.wpm,
                         chunkSize: this.chunkSize,
@@ -1542,6 +1543,7 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                     };
                     localStorage.setItem('rsvp-state', JSON.stringify(state));
                 } catch (e) {
+                    // Si falla (texto muy grande), guardar solo metadata
                     try {
                         const minState = {
                             currentIndex: this.currentIndex,
@@ -1565,7 +1567,26 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 if (saved) {
                     try {
                         const state = JSON.parse(saved);
-                        if (state.words && state.words.length > 0) {
+                        
+                        // NUEVO: Reconstruir desde rawText si existe
+                        if (state.rawText && state.rawText.length > 0) {
+                            // Reconstruir wordMeta y words desde rawText
+                            this.rawText = state.rawText;
+                            this.wordMeta = this.buildWordMeta(state.rawText);
+                            this.words = this.wordMeta.map(m => m.word);
+                            this.chapters = this.parseChapters(state.rawText);
+                            
+                            this.currentIndex = Math.min(state.currentIndex || 0, this.words.length - 1);
+                            this.wpm = state.wpm || 300;
+                            this.chunkSize = state.chunkSize || 1;
+                            this.fontSize = state.fontSize || 'word-size-lg';
+                            this.bookTitle = state.bookTitle || 'Sin título';
+                            this.fileHash = state.fileHash || '';
+                            
+                            this.applyLoadedSettings();
+                        }
+                        // LEGACY: Soporte para estados antiguos con arrays
+                        else if (state.words && state.words.length > 0) {
                             this.words = state.words;
                             this.wordMeta = state.wordMeta || [];
                             this.chapters = state.chapters || [];
@@ -1576,35 +1597,42 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                             this.bookTitle = state.bookTitle || 'Sin título';
                             this.fileHash = state.fileHash || '';
                             
-                            this.wpmSlider.value = this.wpm;
-                            this.wpmValue.textContent = this.wpm;
-                            if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
+                            this.applyLoadedSettings();
                             
-                            this.populateChapterSelect();
-                            
-                            document.querySelectorAll('.font-size-btn').forEach(btn => {
-                                btn.classList.toggle('bg-zinc-600', btn.dataset.size === this.fontSize);
-                                btn.classList.toggle('border-zinc-500/50', btn.dataset.size === this.fontSize);
-                                btn.classList.toggle('bg-zinc-700/50', btn.dataset.size !== this.fontSize);
-                                btn.classList.toggle('border-zinc-600/30', btn.dataset.size !== this.fontSize);
-                            });
-                            
-                            document.querySelectorAll('.chunk-btn').forEach(btn => {
-                                btn.classList.toggle('bg-zinc-600', parseInt(btn.dataset.chunk) === this.chunkSize);
-                                btn.classList.toggle('border-zinc-500/50', parseInt(btn.dataset.chunk) === this.chunkSize);
-                                btn.classList.toggle('bg-zinc-700/50', parseInt(btn.dataset.chunk) !== this.chunkSize);
-                                btn.classList.toggle('border-zinc-600/30', parseInt(btn.dataset.chunk) !== this.chunkSize);
-                            });
-                            
-                            this.currentWord.className = 'rsvp-word ' + this.fontSize + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
-                            
-                            // Start auto-save if we have content
-                            this.startAutoSave();
+                            // Migrar a nuevo formato en próximo save
+                            console.log('Migrando estado legacy a nuevo formato...');
                         }
                     } catch (e) {
                         console.error('Error loading saved state:', e);
                     }
                 }
+            }
+            
+            applyLoadedSettings() {
+                this.wpmSlider.value = this.wpm;
+                this.wpmValue.textContent = this.wpm;
+                if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
+                
+                this.populateChapterSelect();
+                
+                document.querySelectorAll('.font-size-btn').forEach(btn => {
+                    btn.classList.toggle('bg-zinc-600', btn.dataset.size === this.fontSize);
+                    btn.classList.toggle('border-zinc-500/50', btn.dataset.size === this.fontSize);
+                    btn.classList.toggle('bg-zinc-700/50', btn.dataset.size !== this.fontSize);
+                    btn.classList.toggle('border-zinc-600/30', btn.dataset.size !== this.fontSize);
+                });
+                
+                document.querySelectorAll('.chunk-btn').forEach(btn => {
+                    btn.classList.toggle('bg-zinc-600', parseInt(btn.dataset.chunk) === this.chunkSize);
+                    btn.classList.toggle('border-zinc-500/50', parseInt(btn.dataset.chunk) === this.chunkSize);
+                    btn.classList.toggle('bg-zinc-700/50', parseInt(btn.dataset.chunk) !== this.chunkSize);
+                    btn.classList.toggle('border-zinc-600/30', parseInt(btn.dataset.chunk) !== this.chunkSize);
+                });
+                
+                this.currentWord.className = 'rsvp-word ' + this.fontSize + ' font-medium tracking-wide flex items-center justify-center whitespace-nowrap';
+                
+                // Start auto-save if we have content
+                this.startAutoSave();
             }
             
             // ==================== SERVICE WORKER ====================

@@ -5,20 +5,20 @@
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#0f172a",
+    "background_color": "#18181b",
+    "theme_color": "#18181b",
     "orientation": "portrait-primary",
     "categories": ["books", "education", "productivity"],
     "lang": "es",
     "icons": [
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230f172a' width='512' height='512' rx='100'/><text x='256' y='320' font-size='250' text-anchor='middle' fill='white'>📖</text></svg>",
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%2318181b' width='512' height='512' rx='100'/><text x='256' y='320' font-size='250' text-anchor='middle' fill='white'>📖</text></svg>",
             "sizes": "512x512",
             "type": "image/svg+xml",
             "purpose": "any maskable"
         },
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192' rx='40'/><text x='96' y='125' font-size='100' text-anchor='middle' fill='white'>📖</text></svg>",
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2318181b' width='192' height='192' rx='40'/><text x='96' y='125' font-size='100' text-anchor='middle' fill='white'>📖</text></svg>",
             "sizes": "192x192",
             "type": "image/svg+xml",
             "purpose": "any maskable"
@@ -26,7 +26,7 @@
     ],
     "screenshots": [
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 1920'><rect fill='%230f172a' width='1080' height='1920'/><text x='540' y='960' font-size='200' text-anchor='middle' fill='white'>RSVP</text></svg>",
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 1920'><rect fill='%2318181b' width='1080' height='1920'/><text x='540' y='960' font-size='200' text-anchor='middle' fill='white'>RSVP</text></svg>",
             "sizes": "1080x1920",
             "type": "image/svg+xml",
             "form_factor": "narrow"
