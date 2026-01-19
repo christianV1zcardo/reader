@@ -1208,6 +1208,7 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 if (this.currentIndex >= this.words.length) {
                     this.pause();
                     this.currentWord.innerHTML = '<span class="text-zinc-400">¡Fin!</span>';
+                    this.cachedNodes = null; // Invalidar caché
                     return;
                 }
                 
@@ -1219,29 +1220,49 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 const center = chunk.charAt(pivotIndex);
                 const right = chunk.substring(pivotIndex + 1);
                 
-                // Contenedor flex-col global
-                this.currentWord.className = `rsvp-word select-none w-full h-full flex flex-col items-center justify-center`;
+                // DOM RECYCLING: Solo reconstruir si cambió fontSize o es primera vez
+                const needsRebuild = !this.cachedNodes || this.lastFontSize !== this.fontSize;
                 
-                // GUÍAS FIJAS + PALABRA: Las guías están FUERA del contexto de font-size
-                this.currentWord.innerHTML = `
-                    <div class="relative flex flex-col items-center">
-                        <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-bottom: 13px;"></div>
-                        
-                        <div class="relative flex items-center justify-center ${this.fontSize} font-bold leading-none">
-                            <div class="relative flex justify-center items-center text-red-500 z-20">
-                                <span>${center}</span>
-                                <span class="absolute right-full top-0 text-zinc-400 text-right whitespace-nowrap">${left}</span>
-                                <span class="absolute left-full top-0 text-zinc-400 text-left whitespace-nowrap">${right}</span>
+                if (needsRebuild) {
+                    this.lastFontSize = this.fontSize;
+                    this.currentWord.className = `rsvp-word select-none w-full h-full flex flex-col items-center justify-center`;
+                    
+                    // Estructura estática con IDs para capturar referencias
+                    this.currentWord.innerHTML = `
+                        <div class="relative flex flex-col items-center">
+                            <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-bottom: 13px;"></div>
+                            
+                            <div class="relative flex items-center justify-center ${this.fontSize} font-bold leading-none">
+                                <div class="relative flex justify-center items-center text-red-500 z-20">
+                                    <span id="rsvp-center"></span>
+                                    <span id="rsvp-left" class="absolute right-full top-0 text-zinc-400 text-right whitespace-nowrap"></span>
+                                    <span id="rsvp-right" class="absolute left-full top-0 text-zinc-400 text-left whitespace-nowrap"></span>
+                                </div>
                             </div>
+                            
+                            <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-top: 16px;"></div>
                         </div>
-                        
-                        <div style="width: 4px; height: 14px; background: #71717a; border-radius: 2px; margin-top: 16px;"></div>
-                    </div>
 
-                    <div class="text-[11px] text-zinc-600 font-sans tracking-wider mt-4 opacity-50">
-                        Toca para pausar
-                    </div>
-                `;
+                        <div class="text-[11px] text-zinc-600 font-sans tracking-wider mt-4 opacity-50">
+                            Toca para pausar
+                        </div>
+                    `;
+                    
+                    // Caché de nodos para actualizaciones quirúrgicas
+                    this.cachedNodes = {
+                        center: this.currentWord.querySelector('#rsvp-center'),
+                        left: this.currentWord.querySelector('#rsvp-left'),
+                        right: this.currentWord.querySelector('#rsvp-right')
+                    };
+                }
+                
+                // ACTUALIZACIÓN QUIRÚRGICA: Solo textContent, sin layout thrashing
+                if (this.cachedNodes) {
+                    this.cachedNodes.center.textContent = center;
+                    this.cachedNodes.left.textContent = left;
+                    this.cachedNodes.right.textContent = right;
+                }
+                
                 this.updateWordCounter();
             }
             
