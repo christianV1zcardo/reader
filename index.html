@@ -493,6 +493,27 @@
     </div>
 
     <script>
+        // ==================== UTILITY: THROTTLE ====================
+        function throttle(func, limit) {
+            let inThrottle = false;
+            let lastArgs = null;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => {
+                        inThrottle = false;
+                        if (lastArgs) {
+                            func.apply(this, lastArgs);
+                            lastArgs = null;
+                        }
+                    }, limit);
+                } else {
+                    lastArgs = args;
+                }
+            };
+        }
+        
         class RSVPReader {
             constructor() {
                 this.words = [];
@@ -610,7 +631,9 @@
                     }
                 });
                 
-                this.wpmSlider.addEventListener('input', (e) => this.handleWPMChange(e));
+                // OPTIMIZACIÓN: Throttle en WPM slider (100ms) para evitar lag en móvil
+                const throttledWPMChange = throttle((e) => this.handleWPMChange(e), 100);
+                this.wpmSlider.addEventListener('input', throttledWPMChange);
                 
                 this.setupProgressScrubber();
                 
@@ -636,7 +659,8 @@
             }
             
             setupProgressScrubber() {
-                const handleMove = (clientX) => {
+                // OPTIMIZACIÓN: Throttle en el scrubbing para móvil
+                const handleMove = throttle((clientX) => {
                     if (!this.isDraggingProgress) return;
                     const rect = this.progressTrack.getBoundingClientRect();
                     let percent = (clientX - rect.left) / rect.width;
@@ -645,7 +669,7 @@
                     this.updateProgress();
                     this.displayCurrentWord();
                     this.updateChapterInfo();
-                };
+                }, 50); // 50ms throttle para scrubbing suave
                 
                 const startDrag = (e) => {
                     this.isDraggingProgress = true;
@@ -1006,24 +1030,30 @@
                 if (!file) return;
                 
                 this.bookTitle = file.name.replace(/\.[^/.]+$/, '');
+                
+                // Mostrar feedback visual inmediato
+                this.showToast('Cargando libro...');
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const content = event.target.result;
                     const newHash = this.generateFileHash(file.name, content);
-                    
-                    // Check if we have saved position for this file
                     const savedPosition = this.getSavedPositionForFile(newHash);
                     
-                    this.loadText(content, newHash);
-                    
-                    if (savedPosition !== null && savedPosition > 0) {
-                        this.currentIndex = Math.min(savedPosition, this.words.length - 1);
-                        this.displayCurrentWord();
-                        this.updateProgress();
-                        this.updateChapterInfo();
-                        this.showToast(`Restaurado en palabra ${this.formatNumber(this.currentIndex + 1)}`);
-                        console.log(`Restaurado en palabra [${this.currentIndex + 1}]`);
-                    }
+                    // OPTIMIZACIÓN: Defer processing para permitir UI update
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            this.loadText(content, newHash);
+                            
+                            if (savedPosition !== null && savedPosition > 0) {
+                                this.currentIndex = Math.min(savedPosition, this.words.length - 1);
+                                this.displayCurrentWord();
+                                this.updateProgress();
+                                this.updateChapterInfo();
+                                this.showToast(`Restaurado en palabra ${this.formatNumber(this.currentIndex + 1)}`);
+                            }
+                        }, 16); // ~1 frame delay
+                    });
                 };
                 reader.readAsText(file);
                 e.target.value = '';
