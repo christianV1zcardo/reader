@@ -522,7 +522,13 @@
                 this.isPlaying = false;
                 this.wpm = 300;
                 this.chunkSize = 1;
-                this.playTimeoutId = null;
+                
+                // Game Loop State (rAF + Delta Time)
+                this.animationFrameId = null;
+                this.lastFrameTime = 0;
+                this.accumulatedTime = 0;
+                this.currentWordDelay = 0; // Delay actual considerando multiplicador
+                
                 this.autoSaveIntervalId = null;
                 this.uiIntervalId = null; // Bucle secundario para UI (progress bar, tiempo)
                 this.isDraggingProgress = false;
@@ -541,6 +547,9 @@
                 
                 // Word metadata for natural rhythm
                 this.wordMeta = [];
+                
+                // Bind gameLoop para mantener contexto
+                this.gameLoop = this.gameLoop.bind(this);
                 
                 this.cacheElements();
                 this.bindEvents();
@@ -1293,8 +1302,13 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.tapHint.classList.remove('hidden');
                 this.showRSVPView();
                 
-                // Bucle principal: solo texto (crítico, sin lag)
-                this.scheduleNextWord();
+                // Inicializar Game Loop
+                this.lastFrameTime = performance.now();
+                this.accumulatedTime = 0;
+                this.currentWordDelay = this.calculateWordDelay();
+                
+                // Lanzar Game Loop (rAF sincronizado con pantalla)
+                this.animationFrameId = requestAnimationFrame(this.gameLoop);
                 
                 // Bucle secundario: UI cada 500ms (no crítico)
                 if (this.uiIntervalId) clearInterval(this.uiIntervalId);
@@ -1302,29 +1316,47 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.updateUI(); // Actualización inicial
             }
             
-            scheduleNextWord() {
+            // Calcula el delay para la palabra actual (base + multiplicador natural)
+            calculateWordDelay() {
+                const baseDelay = 60000 / this.wpm; // ms por palabra base
+                const multiplier = this.getDelayMultiplier(this.currentIndex);
+                return baseDelay * multiplier;
+            }
+            
+            // Game Loop con Delta Time (sincronizado con refresh rate)
+            gameLoop(now) {
                 if (!this.isPlaying) return;
                 
-                const baseDelay = (60 / this.wpm) * 1000;
-                const multiplier = this.getDelayMultiplier(this.currentIndex);
-                const delay = baseDelay * multiplier;
+                const deltaTime = now - this.lastFrameTime;
+                this.lastFrameTime = now;
+                this.accumulatedTime += deltaTime;
                 
-                this.playTimeoutId = setTimeout(() => {
+                let indexChanged = false;
+                
+                // Disparar cambios de palabra mientras haya tiempo acumulado suficiente
+                while (this.accumulatedTime >= this.currentWordDelay) {
+                    this.accumulatedTime -= this.currentWordDelay;
                     this.currentIndex += this.chunkSize;
+                    indexChanged = true;
                     
+                    // Verificar fin del texto
                     if (this.currentIndex >= this.words.length) {
                         this.pause();
                         this.currentWord.innerHTML = '<span class="text-zinc-400">¡Fin!</span>';
                         return;
                     }
                     
-                    // OPTIMIZACIÓN: Solo texto en ruta crítica
-                    // UI se actualiza en bucle secundario (uiIntervalId)
+                    // Calcular delay para la nueva palabra (ritmo natural)
+                    this.currentWordDelay = this.calculateWordDelay();
+                }
+                
+                // Solo actualizar display si hubo cambio (evita repaints innecesarios)
+                if (indexChanged) {
                     this.displayCurrentWord();
-                    
-                    // Schedule next word with its own delay
-                    this.scheduleNextWord();
-                }, delay);
+                }
+                
+                // Solicitar siguiente frame
+                this.animationFrameId = requestAnimationFrame(this.gameLoop);
             }
             
             pause() {
@@ -1333,9 +1365,10 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.pauseIcon.classList.add('hidden');
                 this.tapHint.classList.add('hidden');
                 
-                if (this.playTimeoutId) {
-                    clearTimeout(this.playTimeoutId);
-                    this.playTimeoutId = null;
+                // Cancelar Game Loop
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.animationFrameId = null;
                 }
                 
                 // Limpiar bucle secundario de UI
@@ -1432,12 +1465,10 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.wpmValue.textContent = this.wpm;
                 if (this.wpmValueFeedback) this.wpmValueFeedback.textContent = this.wpm;
                 
+                // El Game Loop recalculará automáticamente con el nuevo WPM
+                // Solo necesitamos actualizar el delay actual para respuesta inmediata
                 if (this.isPlaying) {
-                    // Restart playback with new WPM
-                    if (this.playTimeoutId) {
-                        clearTimeout(this.playTimeoutId);
-                    }
-                    this.scheduleNextWord();
+                    this.currentWordDelay = this.calculateWordDelay();
                 }
                 
                 this.updateProgress();
@@ -1453,11 +1484,9 @@ La lectura no es solo una herramienta de aprendizaje, es una puerta hacia infini
                 this.showWPMFeedback();
                 setTimeout(() => this.hideWPMFeedback(), 1000);
                 
+                // El Game Loop recalculará automáticamente con el nuevo WPM
                 if (this.isPlaying) {
-                    if (this.playTimeoutId) {
-                        clearTimeout(this.playTimeoutId);
-                    }
-                    this.scheduleNextWord();
+                    this.currentWordDelay = this.calculateWordDelay();
                 }
                 
                 this.updateProgress();
